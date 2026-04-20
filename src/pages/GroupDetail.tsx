@@ -15,10 +15,11 @@ import {
   ShieldCheck,
   Users,
   Wallet,
+  Crown,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { useChamaState } from "@/hooks/useChamaState";
@@ -134,9 +135,9 @@ export default function GroupDetail() {
 
   if (!group) {
     return (
-      <div className="max-w-4xl mx-auto rounded-[32px] bg-white border border-border p-10 card-shadow">
-        <p className="text-lg font-semibold text-slate-900">Group not found</p>
-        <p className="mt-3 text-slate-600">
+      <div className="max-w-4xl mx-auto rounded-[32px] bg-card border border-border p-10 card-shadow">
+        <p className="text-lg font-semibold text-foreground">Group not found</p>
+        <p className="mt-3 text-muted-foreground">
           The group you opened is not available in this workspace.
         </p>
       </div>
@@ -213,697 +214,475 @@ export default function GroupDetail() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      <section className="rounded-[36px] bg-white border border-border card-shadow overflow-hidden">
-        <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="p-8 md:p-10">
-            <Link
-              to="/app/community"
-              className="inline-flex items-center gap-2 text-sm font-medium text-sky-700"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to community
-            </Link>
-            <div className="mt-6 flex items-start gap-4">
-              <div className="w-20 h-20 rounded-[28px] overflow-hidden bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
-                {group.profileImage ? (
-                  <img
-                    src={group.profileImage}
-                    alt={group.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Users className="w-8 h-8" />
-                )}
-              </div>
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
-                  {isAdmin
-                    ? "Admin view"
-                    : isMember
-                      ? "Member view"
-                      : "Before joining"}
-                </div>
-                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-sky-100 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                  {groupTypeLabels[group.groupType] || group.groupType}
-                </div>
-                <h1 className="mt-4 text-4xl font-semibold text-slate-900">
-                  {group.name}
-                </h1>
-                <p className="mt-3 max-w-2xl text-slate-600 leading-8">
-                  {group.description}
-                </p>
-              </div>
+    <div className="max-w-[1400px] mx-auto space-y-8">
+      {/* 1. Hero Banner */}
+      <div className="relative rounded-[32px] overflow-hidden card-shadow bg-card border border-border">
+        {/* Gradient bg */}
+        <div className="absolute inset-0 amibank-gradient opacity-10 dark:opacity-[0.15]"></div>
+        <div className="relative p-8 md:p-10 flex flex-col lg:flex-row gap-8 items-start lg:items-center">
+          <div className="w-24 h-24 rounded-[24px] overflow-hidden bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-xl border-[4px] border-background/50">
+            {group.profileImage ? (
+              <img src={group.profileImage} alt={group.name} className="w-full h-full object-cover" />
+            ) : (
+              <Users className="w-10 h-10" />
+            )}
+          </div>
+          
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center gap-3 mb-3">
+              <span className="px-3 py-1 bg-background/50 border border-border text-foreground text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm backdrop-blur-md">
+                {groupTypeLabels[group.groupType] || group.groupType}
+              </span>
+              {isAdmin && (
+                <span className="px-3 py-1 bg-orange-500/20 text-orange-500 text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1">
+                  <Crown className="w-3 h-3"/> Admin
+                </span>
+              )}
+              {isMember && !isAdmin && (
+                <span className="px-3 py-1 bg-primary/20 text-primary text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3"/> Member
+                </span>
+              )}
             </div>
-
-            <div className="mt-8 grid gap-4 md:grid-cols-4">
-              <div className="rounded-[24px] bg-sky-50 p-4">
-                <p className="text-sm text-sky-700">Purpose</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">
-                  {groupTypeLabels[group.groupType] || group.groupType}
-                </p>
-              </div>
-              <div className="rounded-[24px] bg-blue-50 p-4">
-                <p className="text-sm text-blue-700">Next contribution</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">
-                  {new Date(group.nextContributionDate).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="rounded-[24px] bg-slate-100 p-4">
-                <p className="text-sm text-slate-600">Wallet balance</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">
-                  KES {group.walletBalance.toLocaleString()}
-                </p>
-              </div>
-              <div className="rounded-[24px] border border-sky-100 bg-white p-4">
-                <p className="text-sm text-slate-600">Join fee</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">
-                  KES {group.joinFee.toLocaleString()}
-                </p>
-              </div>
-            </div>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-foreground mb-3 tracking-tight">{group.name}</h1>
+            <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed font-medium">{group.description}</p>
           </div>
 
-          <div className="gradient-hero border-t lg:border-t-0 lg:border-l border-border p-8 md:p-10">
-            {!isMember ? (
-              <div className="rounded-[28px] bg-white p-6 border border-sky-100">
-                <div className="flex items-center gap-3 text-sky-700">
-                  <CheckCircle2 className="w-5 h-5" />
-                  <p className="font-semibold">Before joining this chama</p>
-                </div>
-                <div className="mt-5 space-y-4 text-sm leading-7 text-slate-700">
-                  <label className="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={acceptedRules}
-                      onChange={e => setAcceptedRules(e.target.checked)}
-                      className="mt-1"
-                    />
-                    <span>
-                      I have read the rules, penalties, and contribution terms.
-                    </span>
-                  </label>
-                  <label className="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={acceptedGovernance}
-                      onChange={e => setAcceptedGovernance(e.target.checked)}
-                      className="mt-1"
-                    />
-                    <span>
-                      I accept the governance structure, withdrawal policy, and
-                      audit rules.
-                    </span>
-                  </label>
-                  <div className="rounded-2xl bg-sky-50 px-4 py-4">
-                    <p className="font-medium text-slate-900">
-                      Choose payment method
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {(["mpesa", "bank", "wallet"] as const).map(method => (
-                        <button
-                          key={method}
-                          type="button"
-                          onClick={() => setJoinMethod(method)}
-                          className={`rounded-full px-4 py-2 text-sm font-medium ${
-                            joinMethod === method
-                              ? "bg-sky-600 text-white"
-                              : "bg-white text-slate-700 border border-sky-100"
-                          }`}
-                        >
-                          {method === "mpesa"
-                            ? "M-Pesa"
-                            : method === "bank"
-                              ? "Bank"
-                              : "Wallet"}
-                        </button>
-                      ))}
-                    </div>
+          <div className="bg-background/80 backdrop-blur-xl rounded-[28px] p-7 border border-border w-full lg:w-auto shadow-sm min-w-[280px]">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">Fund Balance</p>
+            <p className="text-3xl font-extrabold text-foreground mb-4">KES {group.walletBalance.toLocaleString()}</p>
+            <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground bg-secondary/80 p-3 rounded-xl border border-border/50">
+               <CalendarDays className="w-4 h-4 text-primary" />
+               Next meeting: {new Date(group.nextContributionDate).toLocaleDateString()}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center">
+        <Link to="/app/community" className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors bg-card border border-border px-4 py-2 rounded-[14px] shadow-sm">
+          <ArrowLeft className="w-4 h-4" />
+          Back to community
+        </Link>
+      </div>
+
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        
+        {/* LEFT COLUMN: Core Actions & Ledger */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* Join Section (If Not Member) */}
+          {!isMember && (
+            <div className="rounded-[32px] bg-card border border-border p-8 card-shadow">
+              <div className="flex items-center gap-3 text-primary mb-6">
+                <CheckCircle2 className="w-6 h-6" />
+                <h2 className="text-2xl font-bold text-foreground">Before joining this chama</h2>
+              </div>
+              <div className="space-y-5 text-sm font-medium text-muted-foreground">
+                <label className="flex items-start gap-4 rounded-[20px] bg-secondary/50 p-5 cursor-pointer hover:bg-secondary transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={acceptedRules}
+                    onChange={e => setAcceptedRules(e.target.checked)}
+                    className="mt-1 w-4 h-4 accent-primary"
+                  />
+                  <span className="leading-relaxed">
+                    I have read the rules, penalties, and contribution terms. I commit to making regular contributions of KES {group.monthlyContribution.toLocaleString()}.
+                  </span>
+                </label>
+                <label className="flex items-start gap-4 rounded-[20px] bg-secondary/50 p-5 cursor-pointer hover:bg-secondary transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={acceptedGovernance}
+                    onChange={e => setAcceptedGovernance(e.target.checked)}
+                    className="mt-1 w-4 h-4 accent-primary"
+                  />
+                  <span className="leading-relaxed">
+                    I accept the governance structure, withdrawal policy, and audit rules of {group.name}.
+                  </span>
+                </label>
+
+                <div className="rounded-[24px] border border-border bg-background p-6">
+                  <p className="font-bold text-foreground mb-4">Choose joining payment method (KES {group.joinFee})</p>
+                  <div className="flex flex-wrap gap-3 mb-6">
+                    {(["mpesa", "bank", "wallet"] as const).map(method => (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={() => setJoinMethod(method)}
+                        className={`rounded-[14px] px-5 py-3 text-xs font-bold transition-all ${
+                          joinMethod === method
+                            ? "bg-primary text-primary-foreground shadow-md"
+                            : "bg-secondary text-muted-foreground border border-border hover:bg-secondary/80"
+                        }`}
+                      >
+                        {method === "mpesa" ? "M-Pesa" : method === "bank" ? "Bank Transfer" : "Khisa Wallet"}
+                      </button>
+                    ))}
                   </div>
-                  <Button onClick={handleJoin} className="w-full rounded-full">
-                    Pay KES {group.joinFee} and join
+                  <Button onClick={handleJoin} className="w-full rounded-[16px] h-12 font-bold text-sm shadow-md">
+                    Pay KES {group.joinFee} & Join Group
                   </Button>
                   {joinFeedback && (
-                    <div className="rounded-2xl bg-sky-50 px-4 py-3 text-sm text-sky-700">
+                    <div className="mt-4 rounded-xl bg-primary/10 px-4 py-3 text-sm font-bold text-primary">
                       {joinFeedback}
                     </div>
                   )}
                 </div>
               </div>
-            ) : (
-              <div className="rounded-[28px] bg-white p-6 border border-sky-100">
-                <div className="flex items-center gap-3 text-sky-700">
-                  <Wallet className="w-5 h-5" />
-                  <p className="font-semibold">Chama wallet summary</p>
-                </div>
-                <div className="mt-5 space-y-4 text-sm leading-7 text-slate-700">
-                  <p>
-                    Monthly contribution: KES{" "}
-                    {group.monthlyContribution.toLocaleString()}
-                  </p>
-                  <p>
-                    Wallet transparency:{" "}
-                    {group.walletTransparency
-                      ? "Visible to members"
-                      : "Private"}
-                  </p>
-                  <p>
-                    Member list visibility:{" "}
-                    {group.memberListVisibility === "public"
-                      ? "Public"
-                      : "Members only"}
-                  </p>
-                  <p>Total ledger entries: {group.ledger.length}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6 rounded-[20px] bg-white border border-border p-1">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="members">Members</TabsTrigger>
-          <TabsTrigger value="wallet">Wallet</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-          <TabsTrigger value="chat">Chat</TabsTrigger>
-        </TabsList>
-
-        <TabsContent
-          value="overview"
-          className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]"
-        >
-          <div className="rounded-[32px] bg-white border border-border p-7 card-shadow">
-            <div className="flex items-center gap-3 text-sky-700">
-              <ShieldCheck className="w-5 h-5" />
-              <p className="font-semibold">Rules summary</p>
             </div>
-            <div className="mt-5 space-y-3">
-              {group.rules.map(rule => (
-                <div
-                  key={rule}
-                  className="rounded-2xl bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-700"
-                >
-                  {rule}
+          )}
+
+          {/* Quick Actions (If Member) */}
+          {isMember && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              
+              {/* Contribute Box */}
+              <div className="rounded-[32px] bg-card border border-border p-7 card-shadow hover-lift">
+                <div className="flex items-center gap-3 text-primary mb-5">
+                  <CreditCard className="w-5 h-5" />
+                  <p className="font-bold text-foreground text-lg">Make a contribution</p>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[32px] bg-white border border-border p-7 card-shadow">
-            <div className="flex items-center gap-3 text-sky-700">
-              <CalendarDays className="w-5 h-5" />
-              <p className="font-semibold">How this chama works</p>
-            </div>
-            <div className="mt-5 space-y-4 text-sm leading-7 text-slate-700">
-              <p>Meeting day: {group.meetingDay}</p>
-              <p>Funding model: {group.payoutStyle}</p>
-              <p>
-                Next contribution date:{" "}
-                {new Date(group.nextContributionDate).toLocaleDateString()}
-              </p>
-              <p>Join fee required: KES {group.joinFee.toLocaleString()}</p>
-              <p>Join code: {group.joinCode}</p>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="members">
-          <div className="rounded-[32px] bg-white border border-border p-7 card-shadow">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm uppercase tracking-[0.18em] text-sky-600">
-                  Members
-                </p>
-                <h2 className="mt-2 text-3xl font-semibold text-slate-900">
-                  {group.memberListVisibility === "public" || isMember
-                    ? "People inside this group"
-                    : "Member list is visible after joining"}
-                </h2>
-              </div>
-              <div className="rounded-full bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700">
-                {group.memberCount} members
-              </div>
-            </div>
-
-            {group.memberListVisibility === "public" || isMember ? (
-              <div className="mt-6 grid gap-4">
-                {group.members.map(member => (
-                  <div
-                    key={member.id}
-                    className="rounded-[24px] border border-border bg-slate-50 px-5 py-5"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                      <div>
-                        <p className="text-lg font-semibold text-slate-900">
-                          {member.name}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          Joined{" "}
-                          {new Date(member.joinedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-3 text-sm">
-                        <span className="rounded-full bg-white px-3 py-1 font-medium text-sky-700">
-                          {member.role}
-                        </span>
-                        <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">
-                          {member.contributionStatus}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mt-4 grid gap-3 md:grid-cols-2 text-sm text-slate-700">
-                      <p>
-                        Total contributed: KES{" "}
-                        {member.totalContributed.toLocaleString()}
-                      </p>
-                      <p>
-                        {member.name === user?.name
-                          ? "This is you"
-                          : "Active group member"}
-                      </p>
-                    </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Amount (KES)</p>
+                    <Input
+                      value={contributionAmount}
+                      onChange={e => setContributionAmount(e.target.value)}
+                      placeholder={String(group.monthlyContribution)}
+                      type="number"
+                      className="rounded-[14px] h-11"
+                    />
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-6 rounded-[24px] bg-slate-50 px-5 py-5 text-sm leading-7 text-slate-600">
-                This chama only reveals the full member list after the user
-                joins and accepts the rules.
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="wallet">
-          <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-            <div className="space-y-6">
-              <div className="rounded-[32px] bg-white border border-border p-7 card-shadow">
-                <div className="flex items-center gap-3 text-sky-700">
-                  <Wallet className="w-5 h-5" />
-                  <p className="font-semibold">Independent chama wallet</p>
-                </div>
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-[24px] bg-sky-50 p-4">
-                    <p className="text-sm text-sky-700">Current balance</p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-900">
-                      KES {group.walletBalance.toLocaleString()}
-                    </p>
+                  <div className="flex gap-2">
+                    {(["mpesa", "wallet"] as const).map(method => (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={() => setContributionMethod(method)}
+                        className={`flex-1 rounded-[12px] py-2.5 text-xs font-bold transition-all ${
+                          contributionMethod === method
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-muted-foreground border border-border"
+                        }`}
+                      >
+                        {method === "mpesa" ? "M-Pesa" : "Wallet"}
+                      </button>
+                    ))}
                   </div>
-                  <div className="rounded-[24px] bg-slate-100 p-4">
-                    <p className="text-sm text-slate-600">Total contributed</p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-900">
-                      KES {group.totalContributed.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-5 rounded-[24px] bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-600">
-                  Each chama wallet is fully independent. Transactions are
-                  recorded in the ledger, balances are calculated from those
-                  records, and no funds are mixed with other groups.
+                  <Button onClick={handleContribute} className="w-full rounded-[14px] h-11 font-bold">
+                    Contribute Now
+                  </Button>
+                  {contributionFeedback && (
+                    <p className="text-xs font-bold text-primary bg-primary/10 p-3 rounded-xl mt-2">{contributionFeedback}</p>
+                  )}
                 </div>
               </div>
 
-              {isMember && (
-                <div className="rounded-[32px] bg-white border border-border p-7 card-shadow">
-                  <div className="flex items-center gap-3 text-sky-700">
-                    <CreditCard className="w-5 h-5" />
-                    <p className="font-semibold">Make a contribution</p>
-                  </div>
-                  <div className="mt-5 space-y-4">
-                    <div>
-                      <p className="mb-2 text-sm font-medium text-slate-700">
-                        Amount
-                      </p>
-                      <Input
-                        value={contributionAmount}
-                        onChange={e => setContributionAmount(e.target.value)}
-                        placeholder={String(group.monthlyContribution)}
-                        type="number"
-                      />
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {(["mpesa", "bank", "wallet"] as const).map(method => (
-                        <button
-                          key={method}
-                          type="button"
-                          onClick={() => setContributionMethod(method)}
-                          className={`rounded-full px-4 py-2 text-sm font-medium ${
-                            contributionMethod === method
-                              ? "bg-sky-600 text-white"
-                              : "bg-slate-100 text-slate-700"
-                          }`}
-                        >
-                          {method === "mpesa"
-                            ? "M-Pesa"
-                            : method === "bank"
-                              ? "Bank"
-                              : "Wallet"}
-                        </button>
-                      ))}
-                    </div>
-                    <Button
-                      onClick={handleContribute}
-                      className="rounded-full px-6"
-                    >
-                      Contribute now
-                    </Button>
-                    {contributionFeedback && (
-                      <div className="rounded-2xl bg-sky-50 px-4 py-3 text-sm text-sky-700">
-                        {contributionFeedback}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {isAdmin && (
-                <div className="rounded-[32px] bg-white border border-border p-7 card-shadow">
-                  <div className="flex items-center gap-3 text-sky-700">
+              {/* Admin Box OR Analytics Snapshot */}
+              {isAdmin ? (
+                <div className="rounded-[32px] bg-card border border-border p-7 card-shadow hover-lift">
+                  <div className="flex items-center gap-3 text-primary mb-5">
                     <Landmark className="w-5 h-5" />
-                    <p className="font-semibold">Admin withdrawal</p>
+                    <p className="font-bold text-foreground text-lg">Admin Withdrawal</p>
                   </div>
-                  <div className="mt-5 space-y-4">
+                  <div className="space-y-4">
                     <div>
-                      <p className="mb-2 text-sm font-medium text-slate-700">
-                        Withdrawal amount
-                      </p>
+                      <p className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Amount (KES)</p>
                       <Input
                         value={withdrawAmount}
                         onChange={e => setWithdrawAmount(e.target.value)}
                         type="number"
-                        placeholder="Enter amount"
+                        placeholder="0"
+                        className="rounded-[14px] h-11"
                       />
                     </div>
                     <div>
-                      <p className="mb-2 text-sm font-medium text-slate-700">
-                        Withdrawal note
-                      </p>
+                      <p className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Note</p>
                       <Input
                         value={withdrawNote}
                         onChange={e => setWithdrawNote(e.target.value)}
-                        placeholder="Example: Approved payout to chama account"
+                        placeholder="E.g., Approved payout"
+                        className="rounded-[14px] h-11"
                       />
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {(["mpesa", "bank", "wallet"] as const).map(method => (
-                        <button
-                          key={method}
-                          type="button"
-                          onClick={() => setWithdrawMethod(method)}
-                          className={`rounded-full px-4 py-2 text-sm font-medium ${
-                            withdrawMethod === method
-                              ? "bg-sky-600 text-white"
-                              : "bg-slate-100 text-slate-700"
-                          }`}
-                        >
-                          {method === "mpesa"
-                            ? "M-Pesa payout"
-                            : method === "bank"
-                              ? "Bank payout"
-                              : "Wallet"}
-                        </button>
-                      ))}
-                    </div>
-                    <Button
-                      onClick={handleWithdraw}
-                      className="rounded-full px-6"
-                    >
-                      Approve withdrawal
+                    <Button variant="destructive" onClick={handleWithdraw} className="w-full rounded-[14px] h-11 font-bold bg-red-500 hover:bg-red-600">
+                      Approve Withdrawal
                     </Button>
                     {withdrawFeedback && (
-                      <div className="rounded-2xl bg-sky-50 px-4 py-3 text-sm text-sky-700">
-                        {withdrawFeedback}
-                      </div>
+                      <p className="text-xs font-bold text-red-500 bg-red-500/10 p-3 rounded-xl mt-2">{withdrawFeedback}</p>
                     )}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-[32px] bg-card border border-border p-7 card-shadow hover-lift flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-3 text-primary mb-5">
+                      <TrendingUp className="w-5 h-5" />
+                      <p className="font-bold text-foreground text-lg">Your Status</p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="bg-secondary/50 rounded-[16px] p-4 border border-border flex justify-between items-center">
+                        <span className="text-sm font-bold text-muted-foreground">Total Contributed</span>
+                        <span className="text-sm font-extrabold text-foreground">KES {(group.members.find(m => m.name === user?.name)?.totalContributed || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="bg-secondary/50 rounded-[16px] p-4 border border-border flex justify-between items-center">
+                        <span className="text-sm font-bold text-muted-foreground">Monthly Expected</span>
+                        <span className="text-sm font-extrabold text-foreground">KES {group.monthlyContribution.toLocaleString()}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
+          )}
 
-            <div className="rounded-[32px] bg-white border border-border p-7 card-shadow">
-              <div className="flex items-center gap-3 text-sky-700">
+          {/* Group Rules & Info Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="rounded-[32px] bg-card border border-border p-7 card-shadow">
+              <div className="flex items-center gap-3 text-primary mb-5">
+                <ShieldCheck className="w-5 h-5" />
+                <p className="font-bold text-foreground text-lg">Group Rules</p>
+              </div>
+              <div className="space-y-3">
+                {group.rules.map(rule => (
+                  <div key={rule} className="rounded-[16px] bg-secondary/50 px-4 py-3 text-xs font-medium leading-relaxed text-muted-foreground border border-border/50">
+                    {rule}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[32px] bg-card border border-border p-7 card-shadow">
+              <div className="flex items-center gap-3 text-primary mb-5">
+                <CalendarDays className="w-5 h-5" />
+                <p className="font-bold text-foreground text-lg">Group Structure</p>
+              </div>
+              <div className="space-y-4 text-sm font-medium text-muted-foreground">
+                <div className="flex justify-between items-center pb-3 border-b border-border/50">
+                  <span>Meeting Day</span>
+                  <span className="text-foreground font-bold">{group.meetingDay}</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-border/50">
+                  <span>Payout Style</span>
+                  <span className="text-foreground font-bold">{group.payoutStyle}</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-border/50">
+                  <span>Join Fee</span>
+                  <span className="text-foreground font-bold">KES {group.joinFee.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Join Code</span>
+                  <span className="bg-primary/10 text-primary px-2 py-1 rounded-md font-bold tracking-widest">{group.joinCode}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Ledger History (If Member) */}
+          {isMember && (
+            <div className="rounded-[32px] bg-card border border-border p-7 card-shadow">
+              <div className="flex items-center gap-3 text-primary mb-6">
                 <Wallet className="w-5 h-5" />
-                <p className="font-semibold">Ledger history</p>
+                <h3 className="text-xl font-bold text-foreground">Ledger Activity</h3>
               </div>
-              <div className="mt-5 space-y-4 max-h-[720px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                 {group.ledger.map(entry => (
-                  <div
-                    key={entry.id}
-                    className="rounded-[24px] border border-border bg-slate-50 px-4 py-4"
-                  >
-                    <div className="flex items-center justify-between gap-4">
+                  <div key={entry.id} className="rounded-[20px] border border-border bg-background p-4 flex items-center justify-between gap-4 hover:shadow-sm transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 ${entry.direction === "in" ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>
+                        <Banknote className="w-5 h-5" />
+                      </div>
                       <div>
-                        <p className="font-medium text-slate-900">
-                          {entry.note}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {entry.actorName} via{" "}
-                          {entry.method === "mpesa" ? "M-Pesa" : entry.method}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p
-                          className={`text-sm font-semibold ${
-                            entry.direction === "in"
-                              ? "text-emerald-600"
-                              : "text-red-600"
-                          }`}
-                        >
-                          {entry.direction === "in" ? "+" : "-"}KES{" "}
-                          {entry.amount.toLocaleString()}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {new Date(entry.createdAt).toLocaleString()}
+                        <p className="font-bold text-foreground text-sm">{entry.note}</p>
+                        <p className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+                          {entry.actorName} • {entry.method === "mpesa" ? "M-Pesa" : entry.method}
                         </p>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="analytics">
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-[32px] bg-white border border-border p-7 card-shadow">
-              <div className="flex items-center gap-3 text-sky-700">
-                <LineChart className="w-5 h-5" />
-                <p className="font-semibold">Since creation</p>
-              </div>
-              <div className="mt-5 space-y-4">
-                <p className="text-4xl font-semibold text-slate-900">
-                  {analytics?.activeMonths || 1}
-                </p>
-                <p className="text-sm leading-7 text-slate-600">
-                  Months active since{" "}
-                  {new Date(group.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-[32px] bg-white border border-border p-7 card-shadow">
-              <p className="text-sm uppercase tracking-[0.18em] text-sky-600">
-                Wallet growth
-              </p>
-              <div className="mt-5 space-y-3">
-                {analytics?.contributionHistory.map(item => (
-                  <div key={item.label}>
-                    <div className="flex items-center justify-between text-sm text-slate-600">
-                      <span>{item.label}</span>
-                      <span>KES {item.amount.toLocaleString()}</span>
-                    </div>
-                    <div className="mt-2 h-2 rounded-full bg-slate-100">
-                      <div
-                        className="h-2 rounded-full gradient-accent"
-                        style={{
-                          width: `${Math.max(18, (item.amount / (analytics.contributionHistory.at(-1)?.amount || 1)) * 100)}%`,
-                        }}
-                      />
+                    <div className="text-right">
+                      <p className={`text-sm font-bold ${entry.direction === "in" ? "text-green-500" : "text-red-500"}`}>
+                        {entry.direction === "in" ? "+" : "-"}KES {entry.amount.toLocaleString()}
+                      </p>
+                      <p className="mt-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        {new Date(entry.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                 ))}
+                {group.ledger.length === 0 && (
+                  <div className="text-center p-8 text-muted-foreground font-medium">No ledger activity yet.</div>
+                )}
               </div>
-            </div>
-
-            <div className="rounded-[32px] bg-white border border-border p-7 card-shadow">
-              <p className="text-sm uppercase tracking-[0.18em] text-sky-600">
-                Member growth
-              </p>
-              <div className="mt-5 space-y-3">
-                {analytics?.memberGrowth.map(item => (
-                  <div key={item.label}>
-                    <div className="flex items-center justify-between text-sm text-slate-600">
-                      <span>{item.label}</span>
-                      <span>{item.count} members</span>
-                    </div>
-                    <div className="mt-2 h-2 rounded-full bg-slate-100">
-                      <div
-                        className="h-2 rounded-full bg-sky-500"
-                        style={{
-                          width: `${Math.max(18, (item.count / Math.max(group.memberCount, 1)) * 100)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 rounded-[24px] bg-sky-50 px-4 py-4 text-sm text-slate-700">
-                Average contribution per member: KES{" "}
-                {analytics?.averagePerMember.toLocaleString()}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="settings">
-          {isAdmin ? (
-            <div className="rounded-[32px] bg-white border border-border p-7 card-shadow">
-              <div className="flex items-center gap-3 text-sky-700">
-                <PencilLine className="w-5 h-5" />
-                <p className="font-semibold">Admin controls</p>
-              </div>
-              <div className="mt-6 grid gap-5 lg:grid-cols-2">
-                <div>
-                  <p className="mb-2 text-sm font-medium text-slate-700">
-                    Description
-                  </p>
-                  <Textarea
-                    value={draftDescription}
-                    onChange={e => setDraftDescription(e.target.value)}
-                    className="min-h-[140px]"
-                  />
-                </div>
-                <div>
-                  <p className="mb-2 text-sm font-medium text-slate-700">
-                    Rules
-                  </p>
-                  <Textarea
-                    value={draftRules}
-                    onChange={e => setDraftRules(e.target.value)}
-                    className="min-h-[140px]"
-                  />
-                </div>
-                <div>
-                  <p className="mb-2 text-sm font-medium text-slate-700">
-                    Meeting day
-                  </p>
-                  <Input
-                    value={draftMeetingDay}
-                    onChange={e => setDraftMeetingDay(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <p className="mb-2 text-sm font-medium text-slate-700">
-                    Monthly contribution
-                  </p>
-                  <Input
-                    value={draftMonthlyContribution}
-                    onChange={e => setDraftMonthlyContribution(e.target.value)}
-                    type="number"
-                  />
-                </div>
-                <div className="lg:col-span-2">
-                  <p className="mb-2 text-sm font-medium text-slate-700">
-                    Payout style
-                  </p>
-                  <Input
-                    value={draftPayoutStyle}
-                    onChange={e => setDraftPayoutStyle(e.target.value)}
-                  />
-                </div>
-              </div>
-              <Button
-                onClick={handleSaveChanges}
-                className="mt-6 rounded-full px-6"
-              >
-                Save group changes
-              </Button>
-            </div>
-          ) : (
-            <div className="rounded-[32px] bg-white border border-border p-10 card-shadow text-center">
-              <Lock className="w-8 h-8 text-sky-700 mx-auto" />
-              <p className="mt-4 text-xl font-semibold text-slate-900">
-                Admin settings are limited
-              </p>
-              <p className="mt-3 text-slate-600">
-                Only the group admin can change rules, contribution amount, and
-                other group settings.
-              </p>
             </div>
           )}
-        </TabsContent>
 
-        <TabsContent value="chat">
+          {/* Admin Settings (If Admin) */}
+          {isAdmin && (
+             <div className="rounded-[32px] bg-card border border-border p-7 card-shadow">
+               <div className="flex items-center gap-3 text-primary mb-6">
+                 <PencilLine className="w-5 h-5" />
+                 <h3 className="text-xl font-bold text-foreground">Admin Controls</h3>
+               </div>
+               <div className="grid gap-5 md:grid-cols-2">
+                 <div>
+                   <p className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Description</p>
+                   <Textarea value={draftDescription} onChange={e => setDraftDescription(e.target.value)} className="min-h-[120px] rounded-[16px]" />
+                 </div>
+                 <div>
+                   <p className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Rules (One per line)</p>
+                   <Textarea value={draftRules} onChange={e => setDraftRules(e.target.value)} className="min-h-[120px] rounded-[16px]" />
+                 </div>
+                 <div>
+                   <p className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Meeting Day</p>
+                   <Input value={draftMeetingDay} onChange={e => setDraftMeetingDay(e.target.value)} className="rounded-[14px] h-11" />
+                 </div>
+                 <div>
+                   <p className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Payout Style</p>
+                   <Input value={draftPayoutStyle} onChange={e => setDraftPayoutStyle(e.target.value)} className="rounded-[14px] h-11" />
+                 </div>
+               </div>
+               <Button onClick={handleSaveChanges} className="mt-6 rounded-[14px] px-8 h-11 font-bold">
+                 Save Settings
+               </Button>
+             </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN: Chat, Members, Analytics */}
+        <div className="space-y-8">
+          
+          {/* Group Chat */}
           {isMember ? (
-            <div className="rounded-[32px] bg-white border border-border p-7 card-shadow">
-              <div className="flex items-center gap-3 text-sky-700">
+            <div className="rounded-[32px] bg-card border border-border p-6 card-shadow flex flex-col h-[500px]">
+              <div className="flex items-center gap-3 text-primary mb-2">
                 <MessageSquare className="w-5 h-5" />
-                <p className="font-semibold">Group chat</p>
+                <h3 className="text-lg font-bold text-foreground">Group Chat</h3>
               </div>
-              <p className="mt-3 text-sm text-slate-600">
-                This chat is only visible to people inside the group.
-              </p>
-
-              <div className="mt-6 space-y-4 max-h-[420px] overflow-y-auto pr-1">
+              <p className="text-xs font-medium text-muted-foreground mb-4">Secure member-only discussion.</p>
+              
+              <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar mb-4">
                 {group.messages.map(entry => (
-                  <div
-                    key={entry.id}
-                    className="rounded-[24px] bg-slate-50 px-4 py-4"
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <p className="font-medium text-slate-900">
-                        {entry.userName}
-                      </p>
-                      <div className="flex items-center gap-3 text-xs text-slate-500">
-                        <span className="rounded-full bg-white px-3 py-1 text-sky-700">
-                          {entry.userRole}
-                        </span>
-                        <span>
-                          {new Date(entry.createdAt).toLocaleString()}
-                        </span>
+                  <div key={entry.id} className="rounded-[16px] bg-secondary/50 p-4 border border-border/50">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-foreground text-sm">{entry.userName}</span>
+                        {entry.userRole === "admin" && <span className="bg-orange-500/20 text-orange-500 text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Admin</span>}
                       </div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{new Date(entry.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                     </div>
-                    <p className="mt-3 text-sm leading-7 text-slate-700">
-                      {entry.content}
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground leading-relaxed">{entry.content}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-6 flex gap-3">
-                <Textarea
+              <div className="flex gap-2">
+                <Input
                   value={message}
                   onChange={e => setMessage(e.target.value)}
-                  placeholder="Write to your group..."
-                  className="min-h-[96px]"
+                  onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Message the group..."
+                  className="rounded-[14px] bg-secondary/50 border-transparent focus-visible:ring-1 focus-visible:ring-primary"
                 />
-                <Button
-                  onClick={handleSendMessage}
-                  className="rounded-[22px] px-5 self-end gap-2"
-                >
-                  Send
-                  <Send className="w-4 h-4" />
+                <Button onClick={handleSendMessage} className="rounded-[14px] w-12 h-10 p-0 flex items-center justify-center shrink-0">
+                  <Send className="w-4 h-4 ml-1" />
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="rounded-[32px] bg-white border border-border p-10 card-shadow text-center">
-              <Lock className="w-8 h-8 text-sky-700 mx-auto" />
-              <p className="mt-4 text-xl font-semibold text-slate-900">
-                Chat is for group members only
-              </p>
-              <p className="mt-3 text-slate-600">
-                Join this group first if you want to take part in the private
-                member conversation.
-              </p>
+            <div className="rounded-[32px] bg-card border border-border p-8 card-shadow text-center">
+              <Lock className="w-8 h-8 text-primary mx-auto mb-3 opacity-50" />
+              <p className="font-bold text-foreground">Chat is locked</p>
+              <p className="text-xs font-medium text-muted-foreground mt-2">Join this group to participate in the discussion.</p>
             </div>
           )}
-        </TabsContent>
-      </Tabs>
+
+          {/* Members List */}
+          <div className="rounded-[32px] bg-card border border-border p-7 card-shadow">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3 text-primary">
+                <Users className="w-5 h-5" />
+                <h3 className="text-lg font-bold text-foreground">Members</h3>
+              </div>
+              <span className="bg-secondary text-foreground text-xs font-bold px-3 py-1 rounded-full">{group.memberCount} / {group.maxMembers}</span>
+            </div>
+
+            {group.memberListVisibility === "public" || isMember ? (
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                {group.members.map(member => (
+                  <div key={member.id} className="flex items-center gap-4 bg-background border border-border rounded-[20px] p-4">
+                    <div className="w-10 h-10 rounded-[12px] bg-secondary flex items-center justify-center font-bold text-foreground shrink-0">
+                      {member.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="font-bold text-foreground text-sm truncate">{member.name}</p>
+                        {member.role === "admin" && <Crown className="w-3.5 h-3.5 text-orange-500" />}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate">
+                          Contributed: KES {member.totalContributed.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <Lock className="w-6 h-6 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <p className="text-sm font-medium text-muted-foreground">Member list is private until you join.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Analytics */}
+          <div className="rounded-[32px] bg-card border border-border p-7 card-shadow">
+            <div className="flex items-center gap-3 text-primary mb-6">
+              <LineChart className="w-5 h-5" />
+              <h3 className="text-lg font-bold text-foreground">Growth Analytics</h3>
+            </div>
+            
+            <div className="space-y-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Wallet Trajectory</p>
+                <div className="space-y-2.5">
+                  {analytics?.contributionHistory.map(item => (
+                    <div key={item.label}>
+                      <div className="flex justify-between text-[11px] font-bold text-muted-foreground mb-1.5">
+                        <span>{item.label}</span>
+                        <span className="text-foreground">KES {item.amount.toLocaleString()}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${Math.max(10, (item.amount / (analytics.contributionHistory.at(-1)?.amount || 1)) * 100)}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Member Growth</p>
+                <div className="space-y-2.5">
+                  {analytics?.memberGrowth.map(item => (
+                    <div key={item.label}>
+                      <div className="flex justify-between text-[11px] font-bold text-muted-foreground mb-1.5">
+                        <span>{item.label}</span>
+                        <span className="text-foreground">{item.count}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div className="h-full bg-sky-400 rounded-full" style={{ width: `${Math.max(10, (item.count / Math.max(group.memberCount, 1)) * 100)}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }

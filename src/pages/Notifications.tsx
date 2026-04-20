@@ -40,7 +40,7 @@ export default function Notifications() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl card-shadow border border-border/50 divide-y divide-border/50">
+      <div className="bg-card rounded-xl card-shadow border border-border divide-y divide-border/50">
         {(notifications ?? []).map((notif) => {
           const config = typeConfig[notif.type] || typeConfig.payment_reminder;
           const Icon = config.icon;

@@ -14,6 +14,12 @@ import Welcome from "./pages/Welcome";
 import GroupDetail from "./pages/GroupDetail";
 import CreateGroup from "./pages/CreateGroup";
 import JoinGroup from "./pages/JoinGroup";
+import Contributions from "./pages/Contributions";
+import Investments from "./pages/Investments";
+import Transactions from "./pages/Transactions";
+import Expenses from "./pages/Expenses";
+import Chat from "./pages/Chat";
+import MyCards from "./pages/MyCards";
 
 function LoadingScreen() {
   return (
@@ -182,6 +188,66 @@ export default function App() {
           <ProtectedRoute>
             <AppRoute>
               <SettingsWorkspace />
+            </AppRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/contributions"
+        element={
+          <ProtectedRoute>
+            <AppRoute>
+              <Contributions />
+            </AppRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/invest"
+        element={
+          <ProtectedRoute>
+            <AppRoute>
+              <Investments />
+            </AppRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/transactions"
+        element={
+          <ProtectedRoute>
+            <AppRoute>
+              <Transactions />
+            </AppRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/expenses"
+        element={
+          <ProtectedRoute>
+            <AppRoute>
+              <Expenses />
+            </AppRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/chat"
+        element={
+          <ProtectedRoute>
+            <AppRoute>
+              <Chat />
+            </AppRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/cards"
+        element={
+          <ProtectedRoute>
+            <AppRoute>
+              <MyCards />
             </AppRoute>
           </ProtectedRoute>
         }

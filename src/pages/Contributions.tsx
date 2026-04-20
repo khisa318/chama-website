@@ -65,12 +65,12 @@ export default function Contributions() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-white/70 text-sm">Contributions This Month</p>
-            <p className="text-3xl font-bold text-white mt-1">
+            <p className="text-xl font-bold text-white mt-1">
               ${(monthlySummary?.total ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </p>
             <p className="text-white/50 text-sm mt-1">{monthlySummary?.count ?? 0} contributions</p>
           </div>
-          <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-card/10 flex items-center justify-center">
             <HandCoins className="w-7 h-7 text-white" />
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function Contributions() {
         </div>
 
         <TabsContent value="history" className="mt-4">
-          <div className="bg-white rounded-xl card-shadow border border-border/50 divide-y divide-border/50">
+          <div className="bg-card rounded-xl card-shadow border border-border divide-y divide-border/50">
             {(contributions ?? []).map((c) => {
               const status = statusIcons[c.status] || statusIcons.pending;
               const StatusIcon = status.icon;
@@ -181,7 +181,7 @@ export default function Contributions() {
         </TabsContent>
 
         <TabsContent value="add" className="mt-4">
-          <div className="bg-white rounded-xl card-shadow border border-border/50 p-6 space-y-4">
+          <div className="bg-card rounded-xl card-shadow border border-border p-6 space-y-4">
             <div>
               <Label>Group *</Label>
               <Select value={groupId} onValueChange={setGroupId}>

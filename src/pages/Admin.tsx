@@ -72,7 +72,7 @@ export default function Admin() {
             {statCards.map((stat) => {
               const Icon = stat.icon;
               return (
-                <div key={stat.label} className="bg-white rounded-xl p-4 card-shadow border border-border/50">
+                <div key={stat.label} className="bg-card rounded-xl p-4 card-shadow border border-border">
                   <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
                     <Icon className={`w-5 h-5 ${stat.color}`} />
                   </div>
@@ -94,7 +94,7 @@ export default function Admin() {
               className="pl-9"
             />
           </div>
-          <div className="bg-white rounded-xl card-shadow border border-border/50 divide-y divide-border/50">
+          <div className="bg-card rounded-xl card-shadow border border-border divide-y divide-border/50">
             {filteredUsers.map((user) => (
               <div key={`${user.authType}-${user.id}`} className="flex items-center gap-3 p-4">
                 <div className="w-10 h-10 rounded-full gradient-accent flex items-center justify-center text-white font-bold text-sm">
@@ -142,7 +142,7 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="contacts" className="mt-6">
-          <div className="bg-white rounded-xl card-shadow border border-border/50 divide-y divide-border/50">
+          <div className="bg-card rounded-xl card-shadow border border-border divide-y divide-border/50">
             {(contacts?.rows ?? []).map((contact) => (
               <div key={contact.id} className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -194,7 +194,7 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="activity" className="mt-6">
-          <div className="bg-white rounded-xl card-shadow border border-border/50 divide-y divide-border/50">
+          <div className="bg-card rounded-xl card-shadow border border-border divide-y divide-border/50">
             {(recentActivity ?? []).map((activity) => (
               <div key={activity.id} className="flex items-center gap-3 p-4">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${

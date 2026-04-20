@@ -70,14 +70,14 @@ export default function CreateGroup() {
 
   return (
     <div className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-      <section className="rounded-[32px] bg-white border border-border p-8 md:p-10 card-shadow">
+      <section className="rounded-[32px] bg-card border border-border p-8 md:p-10 card-shadow">
         <p className="text-sm uppercase tracking-[0.18em] text-sky-600">
           Create your group
         </p>
-        <h1 className="mt-3 text-4xl font-semibold text-slate-900">
+        <h1 className="mt-3 text-2xl font-semibold text-foreground">
           Choose the kind of chama you are starting.
         </h1>
-        <p className="mt-4 text-slate-600 leading-8">
+        <p className="mt-4 text-muted-foreground leading-8">
           Start by choosing the group type, then we shape the contribution
           setup, payout style, and suggested rules around that model.
         </p>
@@ -92,14 +92,14 @@ export default function CreateGroup() {
                 onClick={() => setGroupType(type.id)}
                 className={`rounded-[26px] border p-5 text-left transition-all ${
                   groupType === type.id
-                    ? "border-sky-200 bg-sky-50 shadow-sm"
-                    : "border-border bg-white hover:bg-slate-50"
+                    ? "border-sky-200 bg-secondary shadow-sm"
+                    : "border-border bg-card hover:bg-secondary/50"
                 }`}
               >
-                <p className="text-lg font-semibold text-slate-900">
+                <p className="text-lg font-semibold text-foreground">
                   {type.label}
                 </p>
-                <p className="mt-2 text-sm leading-7 text-slate-600">
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">
                   {type.description}
                 </p>
               </button>
@@ -196,7 +196,7 @@ export default function CreateGroup() {
 
       <section className="space-y-6">
         <div className="rounded-[32px] bg-slate-900 text-white p-8">
-          <div className="w-14 h-14 rounded-3xl bg-white/10 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-3xl bg-card/10 flex items-center justify-center">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <h2 className="mt-6 text-2xl font-semibold">{selectedType.label}</h2>
@@ -207,14 +207,14 @@ export default function CreateGroup() {
           </div>
         </div>
 
-        <div className="rounded-[32px] bg-white border border-border p-8 card-shadow">
+        <div className="rounded-[32px] bg-card border border-border p-8 card-shadow">
           <div className="flex items-center gap-3 text-sky-700">
             <HandCoins className="w-5 h-5" />
             <p className="font-semibold">Preview</p>
           </div>
-          <div className="mt-5 rounded-[24px] gradient-hero border border-sky-100 p-6">
+          <div className="mt-5 rounded-[24px] gradient-hero border border-border p-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-3xl bg-white text-sky-700 flex items-center justify-center overflow-hidden">
+              <div className="w-16 h-16 rounded-3xl bg-card text-sky-700 flex items-center justify-center overflow-hidden">
                 {profileImage ? (
                   <img
                     src={profileImage}
@@ -229,15 +229,15 @@ export default function CreateGroup() {
                 <p className="text-xs uppercase tracking-[0.18em] text-sky-600">
                   {selectedType.shortLabel}
                 </p>
-                <p className="text-lg font-semibold text-slate-900">
+                <p className="text-lg font-semibold text-foreground">
                   {name || "Your group name"}
                 </p>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-muted-foreground">
                   {description || "Your group description will appear here."}
                 </p>
               </div>
             </div>
-            <div className="mt-6 grid gap-3 text-sm text-slate-700">
+            <div className="mt-6 grid gap-3 text-sm text-muted-foreground">
               <p>
                 {selectedType.contributionLabel}: KES{" "}
                 {monthlyContribution || "0"}
@@ -249,7 +249,7 @@ export default function CreateGroup() {
               {ruleList.slice(0, 4).map(rule => (
                 <div
                   key={rule}
-                  className="flex items-start gap-2 text-sm text-slate-600"
+                  className="flex items-start gap-2 text-sm text-muted-foreground"
                 >
                   <BadgeCheck className="w-4 h-4 text-sky-700 mt-0.5 shrink-0" />
                   <span>{rule}</span>
@@ -259,11 +259,11 @@ export default function CreateGroup() {
           </div>
         </div>
 
-        <div className="rounded-[32px] bg-white border border-border p-8 card-shadow">
+        <div className="rounded-[32px] bg-card border border-border p-8 card-shadow">
           <p className="text-sm uppercase tracking-[0.18em] text-sky-600">
             Starting advice
           </p>
-          <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
+          <div className="mt-4 space-y-3 text-sm leading-7 text-muted-foreground">
             <p>
               Have clear bylaws for contributions, loans, penalties, and exits.
             </p>

@@ -48,7 +48,7 @@ export default function TransactionsPage() {
     <div className="space-y-4 max-w-4xl mx-auto">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 bg-white rounded-xl card-shadow border border-border/50 px-3 py-2">
+        <div className="flex items-center gap-2 bg-card rounded-xl card-shadow border border-border px-3 py-2">
           <Filter className="w-4 h-4 text-muted-foreground" />
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="border-0 bg-transparent w-32">
@@ -63,7 +63,7 @@ export default function TransactionsPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2 bg-white rounded-xl card-shadow border border-border/50 px-3 py-2">
+        <div className="flex items-center gap-2 bg-card rounded-xl card-shadow border border-border px-3 py-2">
           <Select value={groupFilter} onValueChange={setGroupFilter}>
             <SelectTrigger className="border-0 bg-transparent w-40">
               <SelectValue placeholder="All Groups" />
@@ -87,7 +87,7 @@ export default function TransactionsPage() {
         {Object.entries(grouped).map(([date, txs]) => (
           <div key={date}>
             <p className="text-sm font-medium text-muted-foreground mb-2 px-1">{date}</p>
-            <div className="bg-white rounded-xl card-shadow border border-border/50 divide-y divide-border/50">
+            <div className="bg-card rounded-xl card-shadow border border-border divide-y divide-border/50">
               {txs!.map((tx) => {
                 const typeConfig = typeIcons[tx.type] || typeIcons.contribution;
                 const TypeIcon = typeConfig.icon;

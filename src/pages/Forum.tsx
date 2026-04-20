@@ -65,7 +65,7 @@ export default function Forum() {
                   className={`rounded-2xl px-4 py-3 ${
                     isOwn
                       ? "gradient-accent text-white rounded-br-sm"
-                      : "bg-white card-shadow border border-border/50 rounded-bl-sm"
+                      : "bg-card card-shadow border border-border rounded-bl-sm"
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">

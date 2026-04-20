@@ -118,21 +118,21 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex bg-[#f7fbff]">
-      <div className="hidden lg:flex lg:w-1/2 gradient-hero flex-col justify-between p-10 relative overflow-hidden border-r border-sky-100">
+      <div className="hidden lg:flex lg:w-1/2 gradient-hero flex-col justify-between p-10 relative overflow-hidden border-r border-border">
         <div className="shimmer absolute inset-0" />
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-12 h-12 rounded-3xl gradient-accent flex items-center justify-center shadow-lg">
               <HandCoins className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-slate-900">Khisa's Kitty</span>
+            <span className="text-2xl font-bold text-foreground">Khisa's Kitty</span>
           </div>
-          <h1 className="text-4xl font-bold text-slate-950 mb-4 leading-tight">
+          <h1 className="text-2xl font-bold text-slate-950 mb-4 leading-tight">
             Create or join a chama
             <br />
             with a clearer member flow.
           </h1>
-          <p className="text-slate-600 text-lg max-w-md leading-8">
+          <p className="text-muted-foreground text-lg max-w-md leading-8">
             After login, you will choose whether to create your own group as the admin
             or join one through community cards and invite codes.
           </p>
@@ -145,10 +145,10 @@ export default function Login() {
           ].map((feat) => {
             const Icon = feat.icon;
             return (
-              <div key={feat.label} className="bg-white rounded-[24px] p-4 border border-sky-100 shadow-sm">
+              <div key={feat.label} className="bg-card rounded-[24px] p-4 border border-border shadow-sm">
                 <Icon className="w-6 h-6 text-sky-700 mb-2" />
-                <p className="text-slate-900 font-medium text-sm">{feat.label}</p>
-                <p className="text-slate-500 text-xs">{feat.desc}</p>
+                <p className="text-foreground font-medium text-sm">{feat.label}</p>
+                <p className="text-muted-foreground text-xs">{feat.desc}</p>
               </div>
             );
           })}
@@ -165,7 +165,7 @@ export default function Login() {
           </div>
 
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-foreground">Get started</h2>
+            <h2 className="text-xl font-bold text-foreground">Get started</h2>
             <p className="text-sm text-muted-foreground mt-1">
               Create an account or log in to continue into your chama setup
             </p>
@@ -173,7 +173,7 @@ export default function Login() {
 
           <button
             onClick={handleOAuth}
-            className="flex items-center justify-center gap-2 w-full p-3 rounded-2xl border border-border bg-white hover:bg-sky-50 transition-colors text-sm font-medium"
+            className="flex items-center justify-center gap-2 w-full p-3 rounded-2xl border border-border bg-card hover:bg-secondary transition-colors text-sm font-medium"
           >
             <Shield className="w-4 h-4 text-sky-600" />
             Sign in with Google
@@ -297,7 +297,7 @@ export default function Login() {
           <p className="text-center text-xs text-muted-foreground">
             By continuing, you move into the create-or-join chama setup flow.
           </p>
-          <p className="text-center text-xs text-slate-500">
+          <p className="text-center text-xs text-muted-foreground">
             <Link to="/" className="text-sky-700 hover:text-sky-800">Back to website overview</Link>
           </p>
         </div>

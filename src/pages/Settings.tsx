@@ -58,13 +58,13 @@ export default function Settings() {
     <div className="space-y-6 max-w-2xl mx-auto">
       {/* Profile Header */}
       <div className="flex items-center gap-4 p-5 gradient-hero rounded-2xl card-shadow-lg">
-        <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-white text-2xl font-bold border-2 border-white/30">
+        <div className="w-16 h-16 rounded-full bg-card/20 flex items-center justify-center text-white text-2xl font-bold border-2 border-white/30">
           {user?.name?.charAt(0)?.toUpperCase() || "U"}
         </div>
         <div>
           <h2 className="text-lg font-bold text-white">{user?.name || "User"}</h2>
           <p className="text-white/70 text-sm">{user?.email}</p>
-          <span className="inline-block mt-1 px-2 py-0.5 bg-white/20 rounded-full text-white text-xs">
+          <span className="inline-block mt-1 px-2 py-0.5 bg-card/20 rounded-full text-white text-xs">
             {user?.role === "admin" ? "Administrator" : "Member"}
           </span>
         </div>
@@ -76,7 +76,7 @@ export default function Settings() {
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3 px-1">
             {section.title}
           </h3>
-          <div className="bg-white rounded-xl card-shadow border border-border/50 divide-y divide-border/50">
+          <div className="bg-card rounded-xl card-shadow border border-border divide-y divide-border/50">
             {section.items.map((item) => {
               const Icon = item.icon;
               const content = (

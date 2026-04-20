@@ -22,16 +22,16 @@ export default function Community() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[32px] bg-white border border-border p-8 card-shadow">
+      <section className="rounded-[32px] bg-card border border-border p-8 card-shadow">
         <div className="flex flex-wrap items-end justify-between gap-5">
           <div>
-            <p className="text-sm uppercase tracking-[0.18em] text-sky-600">
+            <p className="text-sm uppercase tracking-[0.18em] text-primary">
               Community
             </p>
-            <h1 className="mt-3 text-4xl font-semibold text-slate-900">
+            <h1 className="mt-3 text-2xl font-bold text-foreground">
               Discover chama groups to join
             </h1>
-            <p className="mt-4 max-w-2xl text-slate-600 leading-8">
+            <p className="mt-4 max-w-2xl text-muted-foreground leading-8">
               Every group is organised into a clean card with contribution
               expectations, meeting patterns, and join codes so members can pick
               confidently.
@@ -53,12 +53,12 @@ export default function Community() {
         {visibleGroups.map(group => (
           <div
             key={group.id}
-            className="rounded-[30px] bg-white border border-border p-7 card-shadow cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg"
+            className="rounded-[28px] bg-card border border-border p-7 card-shadow cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg"
             onClick={() => navigate(`/app/groups/${group.id}`)}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-[24px] overflow-hidden bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
+                <div className="w-16 h-16 rounded-[20px] overflow-hidden bg-secondary text-primary flex items-center justify-center shrink-0">
                   {group.profileImage ? (
                     <img
                       src={group.profileImage}
@@ -70,27 +70,27 @@ export default function Community() {
                   )}
                 </div>
                 <div>
-                  <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 text-sky-700 px-3 py-1 text-xs font-semibold">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-secondary text-primary px-3 py-1 text-xs font-semibold">
                     <Users className="w-3 h-3" />
                     {group.role ? `You are ${group.role}` : "Open group"}
                   </div>
-                  <h2 className="mt-4 text-2xl font-semibold text-slate-900">
+                  <h2 className="mt-4 text-2xl font-bold text-foreground">
                     {group.name}
                   </h2>
-                  <p className="mt-3 text-slate-600 leading-7">
+                  <p className="mt-3 text-muted-foreground leading-7">
                     {group.description}
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-xs text-slate-500">Join code</p>
-                <p className="text-lg font-semibold text-slate-900">
+                <p className="text-xs text-muted-foreground">Join code</p>
+                <p className="text-lg font-semibold text-foreground">
                   {group.joinCode}
                 </p>
               </div>
             </div>
 
-            <div className="mt-6 grid gap-3 text-sm text-slate-700 md:grid-cols-2">
+            <div className="mt-6 grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
               <p>KES {group.monthlyContribution} per member</p>
               <p>
                 {group.memberCount} / {group.maxMembers} members
@@ -99,17 +99,17 @@ export default function Community() {
               <p>{group.payoutStyle}</p>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+              <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground">
                 {group.groupType}
               </span>
-              <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700">
+              <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-primary">
                 Join fee KES {group.joinFee}
               </span>
             </div>
 
             <div className="mt-6 space-y-2">
               {group.rules.slice(0, 3).map(rule => (
-                <p key={rule} className="text-sm text-slate-600">
+                <p key={rule} className="text-sm text-muted-foreground">
                   {rule}
                 </p>
               ))}
@@ -119,16 +119,14 @@ export default function Community() {
               <Link to={`/app/groups/${group.id}`}>
                 <Button
                   variant="outline"
-                  className="rounded-full px-6 gap-2"
+                  className="rounded-[16px] px-6 font-bold h-10 gap-2"
                   onClick={e => e.stopPropagation()}
                 >
                   <Eye className="w-4 h-4" />
                   View Details
                 </Button>
               </Link>
-              <Button
-                className="rounded-full px-6 gap-2"
-                disabled={!!group.role}
+              <Button className="rounded-[16px] px-6 font-bold h-10 gap-2 bg-foreground text-background hover:bg-foreground/90" disabled={!!group.role}
                 onClick={e => {
                   e.stopPropagation();
                   navigate(`/app/groups/${group.id}`);

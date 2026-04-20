@@ -6,14 +6,14 @@ export default function MembersWorkspace() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[32px] bg-white border border-border p-8 card-shadow">
+      <section className="rounded-[32px] bg-card border border-border p-8 card-shadow">
         <p className="text-sm uppercase tracking-[0.18em] text-sky-600">
           Members
         </p>
-        <h1 className="mt-3 text-4xl font-semibold text-slate-900">
+        <h1 className="mt-3 text-2xl font-semibold text-foreground">
           Manage group structure and member roles
         </h1>
-        <p className="mt-4 max-w-2xl text-slate-600 leading-8">
+        <p className="mt-4 max-w-2xl text-muted-foreground leading-8">
           This page gives a clearer view of the groups you belong to, who leads
           them, and how contribution responsibilities are expected to work.
         </p>
@@ -23,23 +23,23 @@ export default function MembersWorkspace() {
         {memberGroups.map(group => (
           <div
             key={group.id}
-            className="rounded-[30px] bg-white border border-border p-7 card-shadow"
+            className="rounded-[30px] bg-card border border-border p-7 card-shadow transition-all hover:-translate-y-1 hover:shadow-lg hover:border-border"
           >
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-semibold text-slate-900">
+                <h2 className="text-2xl font-semibold text-foreground">
                   {group.name}
                 </h2>
-                <p className="mt-2 text-slate-600">{group.description}</p>
+                <p className="mt-2 text-muted-foreground">{group.description}</p>
               </div>
               <Badge
                 variant="outline"
-                className="border-sky-200 bg-sky-50 text-sky-700"
+                className="border-sky-200 bg-secondary text-sky-700"
               >
                 {group.role === "admin" ? "You are admin" : "You are a member"}
               </Badge>
             </div>
-            <div className="mt-6 grid gap-3 text-sm text-slate-700 md:grid-cols-3">
+            <div className="mt-6 grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
               <p>Members inside: {group.memberCount}</p>
               <p>Maximum size: {group.maxMembers}</p>
               <p>Join code: {group.joinCode}</p>

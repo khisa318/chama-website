@@ -123,7 +123,7 @@ export default function Loans() {
 
         <TabsContent value="my-loans" className="mt-4 space-y-3">
           {(loans ?? []).filter((l) => l.status === "active" || l.status === "pending").map((loan) => (
-            <div key={loan.id} className="bg-white rounded-xl card-shadow border border-border/50 p-4">
+            <div key={loan.id} className="bg-card rounded-xl card-shadow border border-border p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Banknote className="w-5 h-5 text-blue-500" />
@@ -165,7 +165,7 @@ export default function Loans() {
         </TabsContent>
 
         <TabsContent value="request" className="mt-4">
-          <div className="bg-white rounded-xl card-shadow border border-border/50 p-6 space-y-4">
+          <div className="bg-card rounded-xl card-shadow border border-border p-6 space-y-4">
             <div>
               <Label>Group *</Label>
               <Select value={groupId} onValueChange={setGroupId}>
@@ -210,7 +210,7 @@ export default function Loans() {
 
         <TabsContent value="approvals" className="mt-4 space-y-3">
           {(pendingLoans ?? []).map((loan) => (
-            <div key={loan.id} className="bg-white rounded-xl card-shadow border border-border/50 p-4">
+            <div key={loan.id} className="bg-card rounded-xl card-shadow border border-border p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium">${Number(loan.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
                 <Badge className={statusColors[loan.status]}>{loan.status}</Badge>

@@ -58,7 +58,7 @@ export default function Reports() {
         ].map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="bg-white rounded-xl p-4 card-shadow border border-border/50">
+            <div key={stat.label} className="bg-card rounded-xl p-4 card-shadow border border-border">
               <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
                 <Icon className={`w-5 h-5 ${stat.color}`} />
               </div>
@@ -74,7 +74,7 @@ export default function Reports() {
       </div>
 
       {/* Savings Trend */}
-      <div className="bg-white rounded-xl card-shadow border border-border/50 p-5">
+      <div className="bg-card rounded-xl card-shadow border border-border p-5">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5 text-violet-500" />
           <h3 className="font-semibold text-foreground">Monthly Savings Trend</h3>
@@ -106,7 +106,7 @@ export default function Reports() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Expense Breakdown */}
-        <div className="bg-white rounded-xl card-shadow border border-border/50 p-5">
+        <div className="bg-card rounded-xl card-shadow border border-border p-5">
           <div className="flex items-center gap-2 mb-4">
             <PieIcon className="w-5 h-5 text-blue-500" />
             <h3 className="font-semibold text-foreground">Expense Breakdown</h3>
@@ -142,7 +142,7 @@ export default function Reports() {
         </div>
 
         {/* Group Comparison */}
-        <div className="bg-white rounded-xl card-shadow border border-border/50 p-5">
+        <div className="bg-card rounded-xl card-shadow border border-border p-5">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-5 h-5 text-emerald-500" />
             <h3 className="font-semibold text-foreground">Group Balances</h3>

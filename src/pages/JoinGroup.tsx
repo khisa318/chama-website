@@ -35,14 +35,14 @@ export default function JoinGroup() {
 
   return (
     <div className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
-      <section className="rounded-[32px] bg-white border border-border p-8 card-shadow h-fit">
+      <section className="rounded-[32px] bg-card border border-border p-8 card-shadow h-fit">
         <p className="text-sm uppercase tracking-[0.18em] text-sky-600">
           Join with a code
         </p>
-        <h1 className="mt-3 text-3xl font-semibold text-slate-900">
+        <h1 className="mt-3 text-xl font-semibold text-foreground">
           Use a private invite code.
         </h1>
-        <p className="mt-4 text-slate-600 leading-8">
+        <p className="mt-4 text-muted-foreground leading-8">
           If someone already shared a group code with you, use it here and join
           directly.
         </p>
@@ -68,13 +68,13 @@ export default function JoinGroup() {
       </section>
 
       <section className="space-y-5">
-        <div className="rounded-[32px] bg-white border border-border p-8 card-shadow">
+        <div className="rounded-[32px] bg-card border border-border p-8 card-shadow">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <p className="text-sm uppercase tracking-[0.18em] text-sky-600">
                 Join through community
               </p>
-              <h2 className="mt-2 text-3xl font-semibold text-slate-900">
+              <h2 className="mt-2 text-xl font-semibold text-foreground">
                 Browse available chama groups
               </h2>
             </div>
@@ -94,11 +94,11 @@ export default function JoinGroup() {
           {filteredGroups.map(group => (
             <div
               key={group.id}
-              className="rounded-[32px] bg-white border border-border p-7 card-shadow"
+              className="rounded-[32px] bg-card border border-border p-7 card-shadow"
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-[24px] overflow-hidden bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
+                  <div className="w-16 h-16 rounded-[24px] overflow-hidden bg-secondary text-sky-700 flex items-center justify-center shrink-0">
                     {group.profileImage ? (
                       <img
                         src={group.profileImage}
@@ -110,29 +110,29 @@ export default function JoinGroup() {
                     )}
                   </div>
                   <div>
-                    <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 text-sky-700 px-3 py-1 text-xs font-semibold">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-secondary text-sky-700 px-3 py-1 text-xs font-semibold">
                       <Users className="w-3 h-3" />
                       {group.status === "open"
                         ? "Open to join"
                         : "Active community"}
                     </div>
-                    <h3 className="mt-4 text-2xl font-semibold text-slate-900">
+                    <h3 className="mt-4 text-2xl font-semibold text-foreground">
                       {group.name}
                     </h3>
-                    <p className="mt-3 text-slate-600 leading-7 max-w-2xl">
+                    <p className="mt-3 text-muted-foreground leading-7 max-w-2xl">
                       {group.description}
                     </p>
                   </div>
                 </div>
                 <div className="text-right min-w-[160px]">
-                  <p className="text-sm text-slate-500">Join code</p>
-                  <p className="text-lg font-semibold text-slate-900">
+                  <p className="text-sm text-muted-foreground">Join code</p>
+                  <p className="text-lg font-semibold text-foreground">
                     {group.joinCode}
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 grid gap-3 md:grid-cols-4 text-sm text-slate-700">
+              <div className="mt-6 grid gap-3 md:grid-cols-4 text-sm text-muted-foreground">
                 <p>KES {group.monthlyContribution} / month</p>
                 <p>
                   {group.memberCount} of {group.maxMembers} members
@@ -141,10 +141,10 @@ export default function JoinGroup() {
                 <p>{group.payoutStyle}</p>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                <span className="rounded-full bg-secondary/500 px-3 py-1 text-xs font-medium text-muted-foreground">
                   {group.groupType}
                 </span>
-                <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700">
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-sky-700">
                   Join fee KES {group.joinFee}
                 </span>
               </div>
@@ -153,7 +153,7 @@ export default function JoinGroup() {
                 {group.rules.slice(0, 2).map(rule => (
                   <span
                     key={rule}
-                    className="rounded-full bg-slate-100 px-4 py-2 text-xs text-slate-600"
+                    className="rounded-full bg-secondary/500 px-4 py-2 text-xs text-muted-foreground"
                   >
                     {rule}
                   </span>

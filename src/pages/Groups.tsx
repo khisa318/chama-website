@@ -119,7 +119,7 @@ export default function Groups() {
           <Link
             key={group.id}
             to={`/groups/${group.id}`}
-            className="flex items-center gap-4 p-4 bg-white rounded-xl card-shadow border border-border/50 hover:shadow-md transition-all"
+            className="flex items-center gap-4 p-4 bg-card rounded-xl card-shadow border border-border hover:shadow-md transition-all"
           >
             <div className="w-12 h-12 rounded-xl gradient-accent flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
               {group.name.charAt(0)}

@@ -40,7 +40,7 @@ export default function Members() {
   const roleColors: Record<string, string> = {
     admin: "bg-violet-100 text-violet-700",
     treasurer: "bg-blue-100 text-blue-700",
-    member: "bg-gray-100 text-gray-600",
+    member: "bg-gray-100 text-muted-foreground",
   };
 
   return (
@@ -112,7 +112,7 @@ export default function Members() {
       </div>
 
       {/* Members List */}
-      <div className="bg-white rounded-xl card-shadow border border-border/50 divide-y divide-border/50">
+      <div className="bg-card rounded-xl card-shadow border border-border divide-y divide-border/50">
         {(groupDetails?.members ?? []).map((member) => {
           const RoleIcon = roleIcons[member.role] || UserCircle;
           return (

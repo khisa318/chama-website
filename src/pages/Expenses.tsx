@@ -34,7 +34,7 @@ const catColors: Record<string, string> = {
   emergency: "bg-red-100 text-red-700",
   business: "bg-blue-100 text-blue-700",
   transportation: "bg-cyan-100 text-cyan-700",
-  other: "bg-gray-100 text-gray-600",
+  other: "bg-gray-100 text-muted-foreground",
 };
 
 export default function Expenses() {
@@ -85,11 +85,11 @@ export default function Expenses() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-white/70 text-sm">Total Expenses This Month</p>
-            <p className="text-3xl font-bold text-white mt-1">
+            <p className="text-xl font-bold text-white mt-1">
               ${totalThisMonth.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </p>
           </div>
-          <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-card/10 flex items-center justify-center">
             <CreditCard className="w-7 h-7 text-white" />
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function Expenses() {
 
       {/* Category Chart */}
       {chartData.length > 0 && (
-        <div className="bg-white rounded-xl card-shadow border border-border/50 p-4">
+        <div className="bg-card rounded-xl card-shadow border border-border p-4">
           <h3 className="font-medium text-foreground mb-3">By Category</h3>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
@@ -180,14 +180,14 @@ export default function Expenses() {
         </div>
 
         <TabsContent value="history" className="mt-4">
-          <div className="bg-white rounded-xl card-shadow border border-border/50 divide-y divide-border/50">
+          <div className="bg-card rounded-xl card-shadow border border-border divide-y divide-border/50">
             {(expenses ?? []).map((e) => {
               const cat = categories.find((c) => c.value === e.category);
               const CatIcon = cat?.icon || MoreHorizontal;
               return (
                 <div key={e.id} className="flex items-center gap-3 p-4">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${catColors[e.category]?.split(" ")[0] || "bg-gray-50"}`}>
-                    <CatIcon className={`w-5 h-5 ${catColors[e.category]?.split(" ")[1] || "text-gray-500"}`} />
+                    <CatIcon className={`w-5 h-5 ${catColors[e.category]?.split(" ")[1] || "text-muted-foreground"}`} />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">{e.description}</p>
@@ -214,7 +214,7 @@ export default function Expenses() {
         </TabsContent>
 
         <TabsContent value="record" className="mt-4">
-          <div className="bg-white rounded-xl card-shadow border border-border/50 p-6 space-y-4">
+          <div className="bg-card rounded-xl card-shadow border border-border p-6 space-y-4">
             <div>
               <Label>Group *</Label>
               <Select value={groupId} onValueChange={setGroupId}>

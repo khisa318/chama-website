@@ -113,7 +113,7 @@ export default function Chat() {
               className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                 msg.role === "user"
                   ? "gradient-accent text-white rounded-br-sm"
-                  : "bg-white card-shadow border border-border/50 rounded-bl-sm"
+                  : "bg-card card-shadow border border-border rounded-bl-sm"
               }`}
             >
               <p className={`text-sm leading-relaxed ${msg.role === "user" ? "text-white" : "text-foreground"}`}>
@@ -127,7 +127,7 @@ export default function Chat() {
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
               <Star className="w-4 h-4 text-white animate-spin" />
             </div>
-            <div className="bg-white card-shadow border border-border/50 rounded-2xl rounded-bl-sm px-4 py-3">
+            <div className="bg-card card-shadow border border-border rounded-2xl rounded-bl-sm px-4 py-3">
               <div className="flex items-center gap-1">
                 <Leaf className="w-3 h-3 text-violet-500 animate-bounce" />
                 <Leaf className="w-3 h-3 text-violet-500 animate-bounce" style={{ animationDelay: "0.1s" }} />
@@ -146,7 +146,7 @@ export default function Chat() {
               <button
                 key={suggestion}
                 onClick={() => handleSuggestion(suggestion)}
-                className="px-3 py-1.5 bg-white rounded-full text-xs text-muted-foreground border border-border/50 hover:border-primary hover:text-primary transition-colors"
+                className="px-3 py-1.5 bg-card rounded-full text-xs text-muted-foreground border border-border hover:border-primary hover:text-primary transition-colors"
               >
                 {suggestion}
               </button>

@@ -58,7 +58,7 @@ export default function Contact() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Contact Info */}
           <div className="lg:col-span-1 space-y-4">
-            <div className="bg-white rounded-xl card-shadow border border-border/50 p-5 space-y-4">
+            <div className="bg-card rounded-xl card-shadow border border-border p-5 space-y-4">
               <h3 className="font-semibold text-foreground">Get in Touch</h3>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -109,7 +109,7 @@ export default function Contact() {
           {/* Contact Form */}
           <div className="lg:col-span-2">
             {submitted ? (
-              <div className="bg-white rounded-xl card-shadow border border-border/50 p-8 text-center">
+              <div className="bg-card rounded-xl card-shadow border border-border p-8 text-center">
                 <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
                   <CheckCircle className="w-8 h-8 text-emerald-500" />
                 </div>
@@ -125,7 +125,7 @@ export default function Contact() {
                 </Button>
               </div>
             ) : (
-              <div className="bg-white rounded-xl card-shadow border border-border/50 p-6 space-y-4">
+              <div className="bg-card rounded-xl card-shadow border border-border p-6 space-y-4">
                 <h3 className="font-semibold text-foreground">Send us a Message</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>

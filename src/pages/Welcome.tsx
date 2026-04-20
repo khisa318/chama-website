@@ -10,14 +10,14 @@ export default function Welcome() {
   if (memberGroups.length > 0) {
     return (
       <div className="max-w-5xl mx-auto space-y-8">
-        <section className="rounded-[32px] bg-white p-8 md:p-10 card-shadow border border-border">
+        <section className="rounded-[32px] bg-card p-8 md:p-10 card-shadow border border-border">
           <p className="text-sm uppercase tracking-[0.18em] text-sky-600">
             Welcome back
           </p>
-          <h1 className="mt-3 text-4xl font-semibold text-slate-900">
+          <h1 className="mt-3 text-2xl font-semibold text-foreground">
             Your chama space is already active.
           </h1>
-          <p className="mt-4 max-w-2xl text-slate-600 leading-8">
+          <p className="mt-4 max-w-2xl text-muted-foreground leading-8">
             You already belong to at least one group, so you can go straight
             into the app or explore more groups in the community.
           </p>
@@ -44,26 +44,26 @@ export default function Welcome() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      <section className="rounded-[36px] bg-white border border-border card-shadow overflow-hidden">
+      <section className="rounded-[36px] bg-card border border-border card-shadow overflow-hidden">
         <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
           <div className="p-8 md:p-12">
             <p className="text-sm uppercase tracking-[0.18em] text-sky-600">
               Step 1 of 1
             </p>
-            <h1 className="mt-4 text-4xl md:text-5xl font-semibold leading-tight text-slate-900">
+            <h1 className="mt-4 text-2xl md:text-xl font-semibold leading-tight text-foreground">
               Do you want to create a chama group or join one?
             </h1>
-            <p className="mt-5 text-lg leading-8 text-slate-600 max-w-2xl">
+            <p className="mt-5 text-lg leading-8 text-muted-foreground max-w-2xl">
               Start your savings circle as the admin, or join an existing one
               using a community listing or a private group code.
             </p>
           </div>
           <div className="gradient-hero p-8 md:p-12 border-t lg:border-t-0 lg:border-l border-border">
-            <div className="rounded-[28px] bg-white/80 p-6 border border-sky-100">
+            <div className="rounded-[28px] bg-card/80 p-6 border border-border">
               <p className="text-sm font-semibold text-sky-700">
                 What happens next
               </p>
-              <div className="mt-5 space-y-4 text-sm leading-7 text-slate-700">
+              <div className="mt-5 space-y-4 text-sm leading-7 text-muted-foreground">
                 <p>1. Choose whether to create or join a chama.</p>
                 <p>2. Set your group rules or select a group that fits you.</p>
                 <p>
@@ -79,15 +79,15 @@ export default function Welcome() {
       <section className="grid gap-6 lg:grid-cols-2">
         <Link
           to="/welcome/create"
-          className="rounded-[32px] bg-white border border-border p-8 card-shadow hover:shadow-lg transition-all card-enter"
+          className="rounded-[32px] bg-card border border-border p-8 card-shadow hover:shadow-lg transition-all card-enter"
         >
           <div className="w-14 h-14 rounded-3xl gradient-accent flex items-center justify-center text-white">
             <ShieldCheck className="w-6 h-6" />
           </div>
-          <h2 className="mt-6 text-2xl font-semibold text-slate-900">
+          <h2 className="mt-6 text-2xl font-semibold text-foreground">
             Create a chama group
           </h2>
-          <p className="mt-3 text-slate-600 leading-7">
+          <p className="mt-3 text-muted-foreground leading-7">
             Become the admin, set the group name, define monthly contribution
             rules, upload a profile image if you want, and launch your group
             with a join code.
@@ -100,16 +100,16 @@ export default function Welcome() {
 
         <Link
           to="/welcome/join"
-          className="rounded-[32px] bg-white border border-border p-8 card-shadow hover:shadow-lg transition-all card-enter"
+          className="rounded-[32px] bg-card border border-border p-8 card-shadow hover:shadow-lg transition-all card-enter"
           style={{ animationDelay: "0.08s" }}
         >
-          <div className="w-14 h-14 rounded-3xl bg-sky-50 text-sky-700 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-3xl bg-secondary text-sky-700 flex items-center justify-center">
             <Search className="w-6 h-6" />
           </div>
-          <h2 className="mt-6 text-2xl font-semibold text-slate-900">
+          <h2 className="mt-6 text-2xl font-semibold text-foreground">
             Join an existing group
           </h2>
-          <p className="mt-3 text-slate-600 leading-7">
+          <p className="mt-3 text-muted-foreground leading-7">
             Browse community chama cards or use a specific invite code from a
             group you already know. Join quickly and start contributing.
           </p>
@@ -122,7 +122,7 @@ export default function Welcome() {
 
       <section className="rounded-[32px] bg-slate-900 text-white p-8 md:p-10">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm text-white/80">
+          <div className="inline-flex items-center gap-2 rounded-full bg-card/10 px-4 py-2 text-sm text-white/80">
             <Users className="w-4 h-4" />
             Chama-ready flow
           </div>
