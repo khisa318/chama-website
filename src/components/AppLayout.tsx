@@ -3,33 +3,30 @@ import { Link, useLocation } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useChamaState } from "@/hooks/useChamaState";
 import {
-  BadgePlus,
   LayoutDashboard,
   LogOut,
   Menu,
   Settings,
-  UserRound,
   Users,
   WalletCards,
   X,
-  Moon,
-  Sun,
-  PiggyBank,
-  TrendingUp,
+  Activity,
   HandCoins,
-  CreditCard
+  CreditCard,
+  MessageCircle,
+  FileText
 } from "lucide-react";
 import type { ReactNode } from "react";
 
 const navItems = [
   { path: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/app/contributions", label: "My Savings", icon: PiggyBank },
-  { path: "/app/invest", label: "SmartInvest", icon: TrendingUp },
-  { path: "/app/community", label: "Community", icon: Users },
-  { path: "/app/loans", label: "Loans", icon: WalletCards },
-  { path: "/app/transactions", label: "Transactions", icon: HandCoins },
-  { path: "/app/cards", label: "My Cards", icon: CreditCard },
-  { path: "/app/members", label: "Members", icon: UserRound },
+  { path: "/app/chamas", label: "Chamas", icon: Users },
+  { path: "/app/contributions", label: "Contributions", icon: HandCoins },
+  { path: "/app/expenses", label: "Expenses", icon: CreditCard },
+  { path: "/app/loans", label: "My Loans", icon: WalletCards },
+  { path: "/app/chat", label: "Khisa AI", icon: MessageCircle },
+  { path: "/app/reports", label: "Statements", icon: FileText },
+  { path: "/app/activity", label: "My Activity", icon: Activity },
   { path: "/app/settings", label: "Settings", icon: Settings },
 ];
 
@@ -37,26 +34,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
   useEffect(() => {
-    if (document.documentElement.classList.contains('dark')) {
-      setIsDarkMode(true);
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setIsDarkMode(true);
-      document.documentElement.classList.add('dark');
-    }
+    // Force light mode
+    document.documentElement.classList.remove('dark');
   }, []);
-
-  const toggleTheme = () => {
-    if (isDarkMode) {
-      document.documentElement.classList.remove('dark');
-      setIsDarkMode(false);
-    } else {
-      document.documentElement.classList.add('dark');
-      setIsDarkMode(true);
-    }
-  };
 
   const currentPage =
     navItems.find(item => location.pathname.startsWith(item.path))?.label ??
@@ -166,13 +147,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex items-center gap-3">
-              <button
-                onClick={toggleTheme}
-                className="w-11 h-11 rounded-full bg-secondary text-foreground flex items-center justify-center transition-all hover:scale-105"
-                aria-label="Toggle Dark Mode"
-              >
-                {isDarkMode ? <Sun className="w-5 h-5 text-orange-400" /> : <Moon className="w-5 h-5 text-blue-600" />}
-              </button>
+              {/* Dark mode removed per user request */}
             </div>
           </div>
         </header>

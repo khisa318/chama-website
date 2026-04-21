@@ -1,25 +1,22 @@
 import { Routes, Route, Navigate } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/AppLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import AppHome from "./pages/AppHome";
-import Community from "./pages/Community";
+import ChamasWorkspace from "./pages/ChamasWorkspace";
 import LoansWorkspace from "./pages/LoansWorkspace";
-import MembersWorkspace from "./pages/MembersWorkspace";
 import SettingsWorkspace from "./pages/SettingsWorkspace";
 import Welcome from "./pages/Welcome";
 import GroupDetail from "./pages/GroupDetail";
-import CreateGroup from "./pages/CreateGroup";
-import JoinGroup from "./pages/JoinGroup";
-import Contributions from "./pages/Contributions";
-import Investments from "./pages/Investments";
-import Transactions from "./pages/Transactions";
-import Expenses from "./pages/Expenses";
-import Chat from "./pages/Chat";
-import MyCards from "./pages/MyCards";
+import MyActivity from "./pages/MyActivity";
+import ContributionsWorkspace from "./pages/ContributionsWorkspace";
+import ExpensesWorkspace from "./pages/ExpensesWorkspace";
+import ChatWorkspace from "./pages/ChatWorkspace";
+import ReportsWorkspace from "./pages/ReportsWorkspace";
 
 function LoadingScreen() {
   return (
@@ -71,189 +68,141 @@ function WelcomeRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route
-        path="/login"
-        element={
-          <PublicOnlyRoute>
-            <Login />
-          </PublicOnlyRoute>
-        }
-      />
-      <Route path="/auth/callback" element={<AuthCallback />} />
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route
+          path="/login"
+          element={
+            <PublicOnlyRoute>
+              <Login />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
-      <Route
-        path="/welcome"
-        element={
-          <ProtectedRoute>
-            <WelcomeRoute>
-              <Welcome />
-            </WelcomeRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/welcome/create"
-        element={
-          <ProtectedRoute>
-            <WelcomeRoute>
-              <CreateGroup />
-            </WelcomeRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/welcome/join"
-        element={
-          <ProtectedRoute>
-            <WelcomeRoute>
-              <JoinGroup />
-            </WelcomeRoute>
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/welcome"
+          element={
+            <ProtectedRoute>
+              <WelcomeRoute>
+                <Welcome />
+              </WelcomeRoute>
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/app"
-        element={
-          <ProtectedRoute>
-            <Navigate to="/app/dashboard" replace />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/dashboard"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <AppHome />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/community"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <Community />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/groups/:id"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <GroupDetail />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/create-group"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <CreateGroup />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/loans"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <LoansWorkspace />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/members"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <MembersWorkspace />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/settings"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <SettingsWorkspace />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/contributions"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <Contributions />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/invest"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <Investments />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/transactions"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <Transactions />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/expenses"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <Expenses />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/chat"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <Chat />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/app/cards"
-        element={
-          <ProtectedRoute>
-            <AppRoute>
-              <MyCards />
-            </AppRoute>
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/app"
+          element={
+            <ProtectedRoute>
+              <Navigate to="/app/dashboard" replace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/dashboard"
+          element={
+            <ProtectedRoute>
+              <AppRoute>
+                <AppHome />
+              </AppRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/chamas"
+          element={
+            <ProtectedRoute>
+              <AppRoute>
+                <ChamasWorkspace />
+              </AppRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/groups/:id"
+          element={
+            <ProtectedRoute>
+              <AppRoute>
+                <GroupDetail />
+              </AppRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/loans"
+          element={
+            <ProtectedRoute>
+              <AppRoute>
+                <LoansWorkspace />
+              </AppRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/contributions"
+          element={
+            <ProtectedRoute>
+              <AppRoute>
+                <ContributionsWorkspace />
+              </AppRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/expenses"
+          element={
+            <ProtectedRoute>
+              <AppRoute>
+                <ExpensesWorkspace />
+              </AppRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/chat"
+          element={
+            <ProtectedRoute>
+              <AppRoute>
+                <ChatWorkspace />
+              </AppRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/reports"
+          element={
+            <ProtectedRoute>
+              <AppRoute>
+                <ReportsWorkspace />
+              </AppRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/activity"
+          element={
+            <ProtectedRoute>
+              <AppRoute>
+                <MyActivity />
+              </AppRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/settings"
+          element={
+            <ProtectedRoute>
+              <AppRoute>
+                <SettingsWorkspace />
+              </AppRoute>
+            </ProtectedRoute>
+          }
+        />
 
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }
