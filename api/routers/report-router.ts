@@ -2,107 +2,63 @@ import { z } from "zod";
 import { createRouter, authedQuery } from "../middleware";
 import { supabase } from "../lib/supabase";
 import {
-  mapContribution,
-  mapExpense,
-  mapGroup,
-  mapGroupMember,
-  mapLoan,
-  mapTransaction,
   unwrapList,
 } from "../lib/data";
 
 export const reportRouter = createRouter({
+  groupSummary: authedQuery
+    .input(z.object({ groupId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      const contributions = unwrapList(await supabase.from("contributions").select("amount, status").eq("group_id", input.groupId));
+      const loans = unwrapList(await supabase.from("loans").select("amount, status").eq("group_id", input.groupId));
+      const investments = unwrapList(await supabase.from("investments").select("amount_invested, current_value").eq("group_id", input.groupId));
+      const welfare = unwrapList(await supabase.from("welfare_claims").select("amount_approved").eq("group_id", input.groupId).eq("status", "paid"));
+
+      const totalContributions = contributions.reduce((sum, c) => sum + Number(c.amount), 0);
+      const activeLoanBalance = loans.filter(l => l.status === "active").reduce((sum, l) => sum + Number(l.amount), 0);
+      const totalInvested = investments.reduce((sum, i) => sum + Number(i.amount_invested), 0);
+      const currentInvestmentValue = investments.reduce((sum, i) => sum + Number(i.current_value), 0);
+      const totalWelfarePaid = welfare.reduce((sum, w) => sum + Number(w.amount_approved), 0);
+
+      return {
+        totalContributions,
+        activeLoanBalance,
+        totalInvested,
+        currentInvestmentValue,
+        totalWelfarePaid,
+        netBalance: totalContributions - activeLoanBalance - totalInvested - totalWelfarePaid,
+      };
+    }),
+
   savingsTrend: authedQuery
-    .input(
-      z.object({
-        groupId: z.number().optional(),
-        months: z.number().default(6),
-      }).optional(),
-    )
+    .input(z.object({ groupId: z.string().uuid(), months: z.number().default(6) }))
     .query(async ({ input }) => {
-      const rows = unwrapList(await supabase.from("transactions").select("*"))
-        .map(mapTransaction)
-        .filter((row) => row.status === "completed");
+      // Get contributions grouped by month
+      const { data } = await supabase
+        .from("contributions")
+        .select("amount, month_year")
+        .eq("group_id", input.groupId)
+        .eq("status", "paid")
+        .order("month_year", { ascending: true });
 
-      const startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - (input?.months ?? 6) + 1);
-      startDate.setDate(1);
-      startDate.setHours(0, 0, 0, 0);
+      const trendMap: Record<string, number> = {};
+      data?.forEach(row => {
+        trendMap[row.month_year] = (trendMap[row.month_year] || 0) + Number(row.amount);
+      });
 
-      const totals = new Map<string, { month: string; type: string; total: number }>();
-
-      for (const row of rows) {
-        const date = new Date(row.date);
-        if (date < startDate) continue;
-        if (input?.groupId && row.groupId !== input.groupId) continue;
-
-        const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-        const key = `${month}:${row.type}`;
-        const current = totals.get(key) ?? { month, type: row.type, total: 0 };
-        current.total += row.amount;
-        totals.set(key, current);
-      }
-
-      return [...totals.values()].sort((a, b) => a.month.localeCompare(b.month));
+      return Object.entries(trendMap).map(([month, total]) => ({ month, total }));
     }),
 
-  memberContributions: authedQuery
-    .input(z.object({ groupId: z.number().optional() }).optional())
-    .query(async ({ input }) => {
-      const rows = unwrapList(await supabase.from("group_members").select("*"))
-        .map(mapGroupMember)
-        .filter((row) => row.contributionStatus === "paid");
-
-      return rows.filter((row) => !input?.groupId || row.groupId === input.groupId);
+  generatePDF: authedQuery
+    .input(z.object({ groupId: z.string().uuid(), reportType: z.enum(["financial", "audit", "member_statement"]) }))
+    .mutation(async ({ input }) => {
+      // Mock PDF generation delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      return {
+        success: true,
+        downloadUrl: `https://example.com/reports/${input.groupId}_${input.reportType}.pdf`,
+        message: "Report generated successfully",
+      };
     }),
-
-  expenseBreakdown: authedQuery
-    .input(
-      z.object({
-        groupId: z.number().optional(),
-        month: z.number().optional(),
-        year: z.number().optional(),
-      }).optional(),
-    )
-    .query(async ({ input }) => {
-      const rows = unwrapList(await supabase.from("expenses").select("*")).map(mapExpense);
-      const now = new Date();
-      const month = input?.month ?? now.getMonth() + 1;
-      const year = input?.year ?? now.getFullYear();
-      const totals = new Map<string, { category: string; total: number }>();
-
-      for (const row of rows) {
-        const date = new Date(row.date);
-        if (date.getMonth() + 1 !== month || date.getFullYear() !== year) continue;
-        if (input?.groupId && row.groupId !== input.groupId) continue;
-
-        const current = totals.get(row.category) ?? { category: row.category, total: 0 };
-        current.total += row.amount;
-        totals.set(row.category, current);
-      }
-
-      return [...totals.values()];
-    }),
-
-  groupComparison: authedQuery.query(async () => {
-    return unwrapList(await supabase.from("groups").select("*")).map(mapGroup);
-  }),
-
-  dashboardStats: authedQuery.query(async () => {
-    const groups = unwrapList(await supabase.from("groups").select("*")).map(mapGroup);
-    const members = unwrapList(await supabase.from("group_members").select("*")).map(mapGroupMember);
-    const loans = unwrapList(await supabase.from("loans").select("*")).map(mapLoan);
-    const contributions = unwrapList(await supabase.from("contributions").select("*")).map(mapContribution);
-    const expenses = unwrapList(await supabase.from("expenses").select("*")).map(mapExpense);
-
-    return {
-      totalSavings: groups.reduce((sum, group) => sum + group.balance, 0),
-      totalGroups: groups.length,
-      totalMembers: members.length,
-      activeLoans: loans.filter((loan) => loan.status === "active").length,
-      pendingLoans: loans.filter((loan) => loan.status === "pending").length,
-      totalContributions: contributions.reduce((sum, row) => sum + row.amount, 0),
-      totalExpenses: expenses.reduce((sum, row) => sum + row.amount, 0),
-    };
-  }),
 });

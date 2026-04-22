@@ -8,39 +8,24 @@ export const notificationRouter = createRouter({
   list: authedQuery
     .input(
       z.object({
-        type: z.enum([
-          "payment_reminder",
-          "contribution_received",
-          "loan_approved",
-          "loan_declined",
-          "group_announcement",
-          "member_joined",
-          "expense_recorded",
-        ]).optional(),
         read: z.boolean().optional(),
       }).optional(),
     )
     .query(async ({ ctx, input }) => {
-      const rows = unwrapList(
-        await supabase
-          .from("notifications")
-          .select("*")
-          .eq("user_id", ctx.user.id)
-          .order("created_at", { ascending: false }),
-      );
+      let query = supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", ctx.user.id)
+        .order("created_at", { ascending: false });
 
-      return rows
-        .map(mapNotification)
-        .filter((row) => {
-          if (input?.type && row.type !== input.type) return false;
-          if (input?.read !== undefined && row.read !== input.read) return false;
-          return true;
-        })
-        .slice(0, 50);
+      if (input?.read !== undefined) query = query.eq("read", input.read);
+
+      const rows = unwrapList(await query);
+      return rows.map(mapNotification).slice(0, 50);
     }),
 
   getById: authedQuery
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
       const row = unwrap(
         await supabase.from("notifications").select("*").eq("id", input.id).maybeSingle(),
@@ -50,7 +35,7 @@ export const notificationRouter = createRouter({
     }),
 
   markRead: authedQuery
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input }) => {
       const { error } = await supabase
         .from("notifications")
@@ -84,7 +69,7 @@ export const notificationRouter = createRouter({
   }),
 
   delete: authedQuery
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input }) => {
       const { error } = await supabase.from("notifications").delete().eq("id", input.id);
       if (error) {
@@ -98,9 +83,20 @@ export const notificationRouter = createRouter({
     }),
 
   unreadCount: authedQuery.query(async ({ ctx }) => {
-    const rows = unwrapList(
-      await supabase.from("notifications").select("id").eq("user_id", ctx.user.id).eq("read", false),
-    );
-    return rows.length;
+    const { count, error } = await supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", ctx.user.id)
+      .eq("read", false);
+
+    if (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error.message,
+      });
+    }
+
+    return count || 0;
   }),
 });
+

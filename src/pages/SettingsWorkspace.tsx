@@ -7,116 +7,101 @@ import {
   UserRound,
   ShieldCheck,
   Save,
-  Crown
+  Crown,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
-import { useChamaState } from "@/hooks/useChamaState";
+import { trpc } from "@/providers/trpc";
 import { getSupabaseClient } from "@/lib/supabase";
 
 export default function SettingsWorkspace() {
   const { user } = useAuth();
-  const { adminGroups, updateGroup } = useChamaState();
+  const utils = trpc.useContext();
+  
+  const { data: myGroups } = trpc.group.listMyGroups.useQuery();
+  const adminGroups = myGroups?.filter(g => g.createdBy === user?.id) || [];
 
-  const [displayName, setDisplayName] = useState(user?.name || "");
+  const updateUserMutation = trpc.user.update.useMutation({
+    onSuccess: () => {
+      utils.user.getProfile.invalidate();
+      setAccountMessage("Your personal account settings were updated.");
+    },
+    onError: (err) => setAccountMessage(err.message),
+  });
+
+  const updateGroupMutation = trpc.group.update.useMutation({
+    onSuccess: () => {
+      utils.group.listMyGroups.invalidate();
+      setGroupMessage("Group settings updated successfully.");
+    },
+    onError: (err) => setGroupMessage(err.message),
+  });
+
+  const [displayName, setDisplayName] = useState(user?.full_name || "");
   const [email, setEmail] = useState(user?.email || "");
   const [newPassword, setNewPassword] = useState("");
   const [accountMessage, setAccountMessage] = useState("");
 
-  const [selectedGroupId, setSelectedGroupId] = useState(
-    adminGroups[0]?.id || ""
-  );
-  const selectedGroup =
-    adminGroups.find(group => group.id === selectedGroupId) || null;
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const selectedGroup = adminGroups.find(group => group.id === selectedGroupId) || null;
 
   const [groupDescription, setGroupDescription] = useState("");
   const [groupMeetingDay, setGroupMeetingDay] = useState("");
   const [groupContribution, setGroupContribution] = useState("");
-  const [groupPayoutStyle, setGroupPayoutStyle] = useState("");
-  const [groupRules, setGroupRules] = useState("");
-  const [groupImage, setGroupImage] = useState("");
-  const [groupMessage, setGroupMessage] = useState("");
-
+  
   useEffect(() => {
-    setDisplayName(user?.name || "");
+    setDisplayName(user?.full_name || "");
     setEmail(user?.email || "");
   }, [user]);
 
   useEffect(() => {
-    const nextId = adminGroups[0]?.id || "";
-    if (!selectedGroupId && nextId) {
-      setSelectedGroupId(nextId);
+    if (adminGroups.length > 0 && !selectedGroupId) {
+      setSelectedGroupId(adminGroups[0].id);
     }
   }, [adminGroups, selectedGroupId]);
 
   useEffect(() => {
     if (!selectedGroup) return;
-    setGroupDescription(selectedGroup.description);
-    setGroupMeetingDay(selectedGroup.meetingDay);
-    setGroupContribution(String(selectedGroup.monthlyContribution));
-    setGroupPayoutStyle(selectedGroup.payoutStyle);
-    setGroupRules(selectedGroup.rules.join("\n"));
-    setGroupImage(selectedGroup.profileImage || "");
+    setGroupDescription(selectedGroup.description || "");
+    setGroupMeetingDay(String(selectedGroup.contributionDay || "1"));
+    setGroupContribution(String(selectedGroup.contributionAmount || "0"));
   }, [selectedGroup]);
 
   const handleSaveAccount = async () => {
-    try {
-      const supabase = getSupabaseClient();
-      const payload: {
-        email?: string;
-        password?: string;
-        data?: { full_name?: string };
-      } = {
-        data: {
-          full_name: displayName.trim() || user?.name || "User",
-        },
-      };
-
-      if (email.trim() && email.trim() !== user?.email) {
-        payload.email = email.trim();
-      }
-
-      if (newPassword.trim()) {
-        payload.password = newPassword.trim();
-      }
-
+    const supabase = getSupabaseClient();
+    
+    // Update Auth (Email/Password) if needed
+    if (email !== user?.email || newPassword) {
+      const payload: any = {};
+      if (email !== user?.email) payload.email = email;
+      if (newPassword) payload.password = newPassword;
+      
       const { error } = await supabase.auth.updateUser(payload);
       if (error) {
         setAccountMessage(error.message);
         return;
       }
-
-      setNewPassword("");
-      setAccountMessage("Your personal account settings were updated.");
-    } catch (error) {
-      setAccountMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to update your account right now."
-      );
     }
+
+    // Update Profile in users table
+    updateUserMutation.mutate({
+      fullName: displayName,
+    });
   };
 
   const handleSaveGroup = () => {
     if (!selectedGroup) return;
 
-    updateGroup(selectedGroup.id, {
-      description: groupDescription.trim(),
-      meetingDay: groupMeetingDay.trim(),
-      monthlyContribution:
-        Number(groupContribution) || selectedGroup.monthlyContribution,
-      payoutStyle: groupPayoutStyle.trim(),
-      profileImage: groupImage.trim() || undefined,
-      rules: groupRules
-        .split("\n")
-        .map(rule => rule.trim())
-        .filter(Boolean),
+    updateGroupMutation.mutate({
+      id: selectedGroup.id,
+      description: groupDescription,
+      contributionAmount: Number(groupContribution),
+      contributionDay: Number(groupMeetingDay),
     });
-
-    setGroupMessage("Group settings updated successfully.");
   };
 
   return (
@@ -138,7 +123,7 @@ export default function SettingsWorkspace() {
 
           <div className="bg-background/80 backdrop-blur-xl rounded-[28px] p-7 border border-border w-full lg:w-auto shadow-sm min-w-[280px]">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">Your Profile</p>
-            <p className="text-2xl font-extrabold text-foreground truncate">{displayName || "Khisa User"}</p>
+            <p className="text-2xl font-extrabold text-foreground truncate">{displayName || "User"}</p>
             <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground bg-secondary/80 px-3 py-2 mt-3 rounded-xl border border-border/50 truncate">
                <LockKeyhole className="w-3.5 h-3.5 text-primary" />
                {email || "No email linked"}
@@ -147,13 +132,8 @@ export default function SettingsWorkspace() {
         </div>
       </div>
 
-      {/* Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        
-        {/* LEFT COLUMN: Personal Settings & Group Admin Form */}
         <div className="lg:col-span-2 space-y-8">
-          
-          {/* Personal Settings */}
           <div className="rounded-[32px] bg-card border border-border p-7 card-shadow">
             <div className="flex items-center gap-3 text-primary mb-6">
               <ShieldCheck className="w-6 h-6" />
@@ -162,7 +142,7 @@ export default function SettingsWorkspace() {
             
             <div className="grid gap-5 md:grid-cols-2">
               <div>
-                <Label htmlFor="display-name" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Display Name</Label>
+                <Label htmlFor="display-name" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Full Name</Label>
                 <Input
                   id="display-name"
                   value={displayName}
@@ -196,9 +176,10 @@ export default function SettingsWorkspace() {
             <div className="mt-6 flex flex-col sm:flex-row items-center gap-4">
               <Button
                 className="w-full sm:w-auto rounded-[14px] font-bold h-11 px-8"
-                onClick={() => void handleSaveAccount()}
+                onClick={handleSaveAccount}
+                disabled={updateUserMutation.isLoading}
               >
-                Save Personal Changes
+                {updateUserMutation.isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Personal Changes"}
               </Button>
               {accountMessage && (
                 <div className="text-sm font-bold text-primary bg-primary/10 px-4 py-2.5 rounded-xl">
@@ -208,11 +189,10 @@ export default function SettingsWorkspace() {
             </div>
           </div>
 
-          {/* Admin Group Settings Form */}
           <div className="rounded-[32px] bg-card border border-border p-7 card-shadow">
             <div className="flex items-center gap-3 text-primary mb-6">
               <Settings className="w-6 h-6" />
-              <h2 className="text-2xl font-bold text-foreground">Admin Controls</h2>
+              <h2 className="text-2xl font-bold text-foreground">Group Admin Controls</h2>
             </div>
             
             {selectedGroup ? (
@@ -222,16 +202,6 @@ export default function SettingsWorkspace() {
                   <span className="text-sm font-extrabold text-foreground px-3 py-1 bg-background rounded-full border border-border shadow-sm">{selectedGroup.name}</span>
                 </div>
 
-                <div>
-                  <Label htmlFor="group-image" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Profile Picture URL</Label>
-                  <Input
-                    id="group-image"
-                    value={groupImage}
-                    onChange={e => setGroupImage(e.target.value)}
-                    className="rounded-[14px] h-11 mt-1"
-                    placeholder="https://..."
-                  />
-                </div>
                 <div>
                   <Label htmlFor="group-description" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Group Description</Label>
                   <Textarea
@@ -244,16 +214,17 @@ export default function SettingsWorkspace() {
                 
                 <div className="grid gap-5 md:grid-cols-2">
                   <div>
-                    <Label htmlFor="group-meeting-day" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Meeting Day</Label>
+                    <Label htmlFor="group-meeting-day" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Contribution Day (1-31)</Label>
                     <Input
                       id="group-meeting-day"
+                      type="number"
                       value={groupMeetingDay}
                       onChange={e => setGroupMeetingDay(e.target.value)}
                       className="rounded-[14px] h-11 mt-1"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="group-contribution" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Monthly Expected (KES)</Label>
+                    <Label htmlFor="group-contribution" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Contribution Amount (KES)</Label>
                     <Input
                       id="group-contribution"
                       type="number"
@@ -262,54 +233,31 @@ export default function SettingsWorkspace() {
                       className="rounded-[14px] h-11 mt-1"
                     />
                   </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="group-payout-style" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Payout Style</Label>
-                    <Input
-                      id="group-payout-style"
-                      value={groupPayoutStyle}
-                      onChange={e => setGroupPayoutStyle(e.target.value)}
-                      className="rounded-[14px] h-11 mt-1"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="group-rules" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Rules (One per line)</Label>
-                    <Textarea
-                      id="group-rules"
-                      value={groupRules}
-                      onChange={e => setGroupRules(e.target.value)}
-                      className="min-h-[140px] rounded-[16px] mt-1"
-                    />
-                  </div>
                 </div>
 
                 <div className="mt-6 flex flex-col sm:flex-row items-center gap-4">
                   <Button
                     className="w-full sm:w-auto rounded-[14px] font-bold h-11 px-8 gap-2 bg-orange-500 hover:bg-orange-600 text-white"
                     onClick={handleSaveGroup}
+                    disabled={updateGroupMutation.isLoading}
                   >
-                    <Save className="w-4 h-4" /> Save Group Settings
+                    {updateGroupMutation.isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Save Group Settings
                   </Button>
-                  {groupMessage && (
-                    <div className="text-sm font-bold text-orange-500 bg-orange-500/10 px-4 py-2.5 rounded-xl flex items-center gap-2">
-                      <Check className="w-4 h-4" />
-                      {groupMessage}
-                    </div>
-                  )}
+                  {updateGroupMutation.isLoading && <p className="text-sm font-bold text-orange-500">Updating...</p>}
                 </div>
               </div>
             ) : (
               <div className="rounded-[24px] bg-secondary/50 px-8 py-10 text-center border border-border/50">
                 <Building2 className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-50" />
                 <p className="font-bold text-foreground">No Group Selected</p>
-                <p className="text-xs font-medium text-muted-foreground mt-2 max-w-sm mx-auto">Select a group you manage from the sidebar to change its identity, rules, and contribution settings.</p>
+                <p className="text-xs font-medium text-muted-foreground mt-2 max-w-sm mx-auto">Select a group you manage from the sidebar to change its configuration.</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Sidebar (Account Control & Group Selector) */}
         <div className="space-y-8">
-          
           <div className="rounded-[32px] bg-card border border-border p-7 card-shadow">
             <div className="flex items-center gap-3 text-primary mb-6">
               <Crown className="w-5 h-5" />
@@ -322,7 +270,7 @@ export default function SettingsWorkspace() {
                     key={group.id}
                     onClick={() => {
                       setSelectedGroupId(group.id);
-                      setGroupMessage("");
+                      setAccountMessage("");
                     }}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-[16px] transition-all border ${
                       selectedGroupId === group.id
@@ -338,7 +286,6 @@ export default function SettingsWorkspace() {
                       </div>
                       <div className="text-left min-w-0">
                         <p className={`text-sm font-bold truncate max-w-[120px] ${selectedGroupId === group.id ? "text-primary" : "text-foreground"}`}>{group.name}</p>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-0.5">{group.memberCount} members</p>
                       </div>
                     </div>
                     {selectedGroupId === group.id && <Check className="w-4 h-4 text-primary shrink-0" />}
@@ -353,33 +300,6 @@ export default function SettingsWorkspace() {
               )}
             </div>
           </div>
-
-          <div className="rounded-[32px] bg-slate-900 border border-slate-800 p-7 shadow-lg relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <LockKeyhole className="w-24 h-24 text-white" />
-            </div>
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 text-white mb-5">
-                <LockKeyhole className="w-5 h-5" />
-                <p className="font-bold text-lg">Account Control</p>
-              </div>
-              <ul className="space-y-3 text-xs leading-relaxed text-slate-300 font-medium">
-                <li className="flex gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-500 mt-1.5 shrink-0" />
-                  Change the name people see inside groups and community spaces.
-                </li>
-                <li className="flex gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-500 mt-1.5 shrink-0" />
-                  Update your email if you want account notices to go somewhere else.
-                </li>
-                <li className="flex gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-500 mt-1.5 shrink-0" />
-                  Change your password seamlessly without leaving the workspace.
-                </li>
-              </ul>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>

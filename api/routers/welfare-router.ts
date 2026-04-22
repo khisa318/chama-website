@@ -8,208 +8,114 @@ export const welfareRouter = createRouter({
   list: authedQuery
     .input(
       z.object({
-        groupId: z.number().optional(),
+        groupId: z.string().uuid().optional(),
         status: z.enum(["pending", "approved", "rejected", "paid"]).optional(),
       }).optional(),
     )
     .query(async ({ input }) => {
-      const rows = unwrapList(
-        await supabase.from("welfare_claims").select("*").order("created_at", { ascending: false }),
-      );
+      let query = supabase.from("welfare_claims").select("*").order("created_at", { ascending: false });
 
-      return rows
-        .filter((row) => {
-          if (input?.groupId && row.group_id !== input.groupId) return false;
-          if (input?.status && row.status !== input.status) return false;
-          return true;
-        });
+      if (input?.groupId) query = query.eq("group_id", input.groupId);
+      if (input?.status) query = query.eq("status", input.status);
+
+      const rows = unwrapList(await query);
+      return rows.map(mapWelfareClaim);
     }),
 
   getById: authedQuery
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
       const row = unwrap(
         await supabase.from("welfare_claims").select("*").eq("id", input.id).maybeSingle(),
         "Welfare claim not found",
-      );
-      return row;
+      ) as Record<string, unknown>;
+      return mapWelfareClaim(row);
     }),
 
   submit: authedQuery
     .input(
       z.object({
-        groupId: z.number(),
-        claimType: z.enum(["medical", "burial", "graduation", "emergency", "other"]),
+        groupId: z.string().uuid(),
+        type: z.enum(["medical", "burial", "graduation", "maternity", "other"]),
         description: z.string().max(1000),
-        amount: z.number().positive(),
-        documentUrl: z.string().url().optional(),
+        amountRequested: z.number().positive(),
+        documentUrl: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const member = unwrap(
-        await supabase
-          .from("group_members")
-          .select("*")
-          .eq("group_id", input.groupId)
-          .eq("user_id", ctx.user.id)
-          .maybeSingle(),
-        "You are not a member of this group",
-      );
-
       const claim = unwrap(
         await supabase
           .from("welfare_claims")
           .insert({
             group_id: input.groupId,
-            member_id: member.id,
-            claim_type: input.claimType,
+            claimant_id: ctx.user.id,
+            type: input.type,
             description: input.description,
-            amount: input.amount,
+            amount_requested: input.amountRequested,
             document_url: input.documentUrl ?? null,
             status: "pending",
           })
           .select("*")
           .single(),
-      );
+      ) as Record<string, unknown>;
 
-      // Create audit log
-      await supabase.from("audit_logs").insert({
+      await supabase.from("audit_log").insert({
         group_id: input.groupId,
-        user_id: ctx.user.id,
+        actor_id: ctx.user.id,
         action: "submitted_welfare_claim",
-        entity_type: "welfare",
-        entity_id: claim.id,
-        details: `Submitted ${input.claimType} welfare claim for KES ${input.amount}`,
+        target_type: "welfare_claim",
+        target_id: claim.id as string,
+        details: { type: input.type, amount: input.amountRequested },
       });
 
-      return claim;
+      return mapWelfareClaim(claim);
     }),
 
-  approve: authedQuery
+  review: authedQuery
     .input(
       z.object({
-        id: z.number(),
-        groupId: z.number(),
+        id: z.string().uuid(),
+        status: z.enum(["approved", "rejected"]),
+        amountApproved: z.number().nonnegative().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify user is treasurer or chairperson
-      const member = unwrap(
-        await supabase
-          .from("group_members")
-          .select("*")
-          .eq("group_id", input.groupId)
-          .eq("user_id", ctx.user.id)
-          .maybeSingle(),
-        "Not authorized",
-      );
-
-      if (!["treasurer", "chairperson", "admin"].includes(member.role)) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-
       const claim = unwrap(
-        await supabase
-          .from("welfare_claims")
-          .update({
-            status: "approved",
-            approved_by: ctx.user.id,
-            approved_at: new Date().toISOString(),
-          })
-          .eq("id", input.id)
-          .select("*")
-          .single(),
-      );
+        await supabase.from("welfare_claims").select("group_id").eq("id", input.id).single(),
+      ) as any;
 
-      // Create audit log
-      await supabase.from("audit_logs").insert({
-        group_id: input.groupId,
-        user_id: ctx.user.id,
-        action: "approved_welfare_claim",
-        entity_type: "welfare",
-        entity_id: input.id,
-        details: `Approved welfare claim for KES ${claim.amount}`,
+      const { error } = await supabase
+        .from("welfare_claims")
+        .update({
+          status: input.status,
+          amount_approved: input.amountApproved ?? 0,
+          reviewed_by: ctx.user.id,
+        })
+        .eq("id", input.id);
+
+      if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+
+      await supabase.from("audit_log").insert({
+        group_id: claim.group_id,
+        actor_id: ctx.user.id,
+        action: `${input.status}_welfare_claim`,
+        target_type: "welfare_claim",
+        target_id: input.id,
+        details: { status: input.status, amountApproved: input.amountApproved },
       });
 
-      return claim;
-    }),
-
-  reject: authedQuery
-    .input(
-      z.object({
-        id: z.number(),
-        groupId: z.number(),
-        reason: z.string().max(500),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const member = unwrap(
-        await supabase
-          .from("group_members")
-          .select("*")
-          .eq("group_id", input.groupId)
-          .eq("user_id", ctx.user.id)
-          .maybeSingle(),
-        "Not authorized",
-      );
-
-      if (!["treasurer", "chairperson", "admin"].includes(member.role)) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-
-      const claim = unwrap(
-        await supabase
-          .from("welfare_claims")
-          .update({
-            status: "rejected",
-            rejection_reason: input.reason,
-            approved_by: ctx.user.id,
-            approved_at: new Date().toISOString(),
-          })
-          .eq("id", input.id)
-          .select("*")
-          .single(),
-      );
-
-      // Create audit log
-      await supabase.from("audit_logs").insert({
-        group_id: input.groupId,
-        user_id: ctx.user.id,
-        action: "rejected_welfare_claim",
-        entity_type: "welfare",
-        entity_id: input.id,
-        details: `Rejected welfare claim: ${input.reason}`,
-      });
-
-      return claim;
+      return { success: true };
     }),
 
   markAsPaid: authedQuery
-    .input(z.object({ id: z.number(), groupId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      const member = unwrap(
-        await supabase
-          .from("group_members")
-          .select("*")
-          .eq("group_id", input.groupId)
-          .eq("user_id", ctx.user.id)
-          .maybeSingle(),
-        "Not authorized",
-      );
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      const { error } = await supabase
+        .from("welfare_claims")
+        .update({ status: "paid" })
+        .eq("id", input.id);
 
-      if (!["treasurer", "chairperson", "admin"].includes(member.role)) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-
-      const claim = unwrap(
-        await supabase
-          .from("welfare_claims")
-          .update({ status: "paid" })
-          .eq("id", input.id)
-          .select("*")
-          .single(),
-      );
-
-      return claim;
+      if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      return { success: true };
     }),
 });

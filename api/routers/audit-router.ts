@@ -1,188 +1,92 @@
 import { z } from "zod";
 import { createRouter, authedQuery } from "../middleware";
 import { supabase } from "../lib/supabase";
-import { unwrapList } from "../lib/data";
+import { mapAuditLog, unwrapList } from "../lib/data";
+import { TRPCError } from "@trpc/server";
 
 export const auditRouter = createRouter({
   list: authedQuery
     .input(
       z.object({
-        groupId: z.number(),
-        userId: z.number().optional(),
+        groupId: z.string().uuid(),
+        actorId: z.string().uuid().optional(),
         action: z.string().optional(),
-        entityType: z.string().optional(),
-        startDate: z.date().optional(),
-        endDate: z.date().optional(),
-        limit: z.number().int().positive().max(1000).default(50),
+        targetType: z.string().optional(),
+        limit: z.number().int().positive().max(100).default(50),
         offset: z.number().int().nonnegative().default(0),
       }),
     )
     .query(async ({ input }) => {
       let query = supabase
-        .from("audit_logs")
-        .select("*, user:user_id(*)", { count: "exact" })
+        .from("audit_log")
+        .select("*, actor:actor_id(full_name, avatar_url)", { count: "exact" })
         .eq("group_id", input.groupId);
 
-      if (input.userId) {
-        query = query.eq("user_id", input.userId);
-      }
-
-      if (input.action) {
-        query = query.eq("action", input.action);
-      }
-
-      if (input.entityType) {
-        query = query.eq("entity_type", input.entityType);
-      }
-
-      if (input.startDate) {
-        query = query.gte("created_at", input.startDate.toISOString());
-      }
-
-      if (input.endDate) {
-        const endOfDay = new Date(input.endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        query = query.lte("created_at", endOfDay.toISOString());
-      }
+      if (input.actorId) query = query.eq("actor_id", input.actorId);
+      if (input.action) query = query.eq("action", input.action);
+      if (input.targetType) query = query.eq("target_type", input.targetType);
 
       const { data, count } = await query
         .order("created_at", { ascending: false })
         .range(input.offset, input.offset + input.limit - 1);
 
       return {
-        logs: data || [],
+        logs: (data || []).map(mapAuditLog),
         total: count || 0,
-        limit: input.limit,
-        offset: input.offset,
       };
     }),
 
-  getByEntity: authedQuery
-    .input(
-      z.object({
-        groupId: z.number(),
-        entityType: z.string(),
-        entityId: z.number(),
-      }),
-    )
+  getRecent: authedQuery
+    .input(z.object({ groupId: z.string().uuid(), limit: z.number().default(10) }))
     .query(async ({ input }) => {
-      const logs = unwrapList(
-        await supabase
-          .from("audit_logs")
-          .select("*, user:user_id(*)")
-          .eq("group_id", input.groupId)
-          .eq("entity_type", input.entityType)
-          .eq("entity_id", input.entityId)
-          .order("created_at", { ascending: false }),
-      );
+      const { data } = await supabase
+        .from("audit_log")
+        .select("*, actor:actor_id(full_name, avatar_url)")
+        .eq("group_id", input.groupId)
+        .order("created_at", { ascending: false })
+        .limit(input.limit);
 
-      return logs;
+      return (data || []).map(mapAuditLog);
     }),
 
-  getActivitySummary: authedQuery
-    .input(
-      z.object({
-        groupId: z.number(),
-        days: z.number().int().positive().default(30),
-      }),
-    )
+  getRecentForUser: authedQuery
+    .input(z.object({ limit: z.number().default(10) }))
+    .query(async ({ ctx, input }) => {
+      const { data, error } = await supabase
+        .from("audit_log")
+        .select("*, actor:actor_id(full_name, avatar_url), groups!inner(group_members!inner(user_id))")
+        .eq("groups.group_members.user_id", ctx.user.id)
+        .order("created_at", { ascending: false })
+        .limit(input.limit);
+
+      if (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error.message,
+        });
+      }
+
+      return (data || []).map(mapAuditLog);
+    }),
+
+  getStats: authedQuery
+    .input(z.object({ groupId: z.string().uuid() }))
     .query(async ({ input }) => {
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - input.days);
+      // Get action counts for the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const logs = unwrapList(
-        await supabase
-          .from("audit_logs")
-          .select("action, entity_type, count(*)")
-          .eq("group_id", input.groupId)
-          .gte("created_at", startDate.toISOString())
-          .order("created_at", { ascending: false }),
-      );
+      const { data } = await supabase
+        .from("audit_log")
+        .select("action")
+        .eq("group_id", input.groupId)
+        .gte("created_at", thirtyDaysAgo.toISOString());
 
-      // Group by action and entity type
-      const activityMap: Record<string, number> = {};
-      logs.forEach((log) => {
-        const key = `${log.action}:${log.entity_type}`;
-        activityMap[key] = (activityMap[key] || 0) + 1;
+      const counts: Record<string, number> = {};
+      data?.forEach((row) => {
+        counts[row.action] = (counts[row.action] || 0) + 1;
       });
 
-      return activityMap;
-    }),
-
-  getUserActivity: authedQuery
-    .input(
-      z.object({
-        groupId: z.number(),
-        userId: z.number(),
-        limit: z.number().int().positive().max(100).default(20),
-      }),
-    )
-    .query(async ({ input }) => {
-      const logs = unwrapList(
-        await supabase
-          .from("audit_logs")
-          .select("*")
-          .eq("group_id", input.groupId)
-          .eq("user_id", input.userId)
-          .order("created_at", { ascending: false })
-          .limit(input.limit),
-      );
-
-      return logs;
-    }),
-
-  getApprovalHistory: authedQuery
-    .input(
-      z.object({
-        groupId: z.number(),
-        entityType: z.string(), // 'loan', 'welfare', 'investment'
-      }),
-    )
-    .query(async ({ input }) => {
-      const logs = unwrapList(
-        await supabase
-          .from("audit_logs")
-          .select("*, user:user_id(*)")
-          .eq("group_id", input.groupId)
-          .eq("entity_type", input.entityType)
-          .in("action", ["approved", "rejected", "approved_loan", "rejected_loan"])
-          .order("created_at", { ascending: false }),
-      );
-
-      return logs;
-    }),
-
-  exportAuditReport: authedQuery
-    .input(
-      z.object({
-        groupId: z.number(),
-        startDate: z.date().optional(),
-        endDate: z.date().optional(),
-      }),
-    )
-    .query(async ({ input }) => {
-      let query = supabase
-        .from("audit_logs")
-        .select("*, user:user_id(*)")
-        .eq("group_id", input.groupId);
-
-      if (input.startDate) {
-        query = query.gte("created_at", input.startDate.toISOString());
-      }
-
-      if (input.endDate) {
-        const endOfDay = new Date(input.endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        query = query.lte("created_at", endOfDay.toISOString());
-      }
-
-      const { data } = await query
-        .order("created_at", { ascending: false })
-        .limit(10000);
-
-      return {
-        data: data || [],
-        generatedAt: new Date().toISOString(),
-      };
+      return counts;
     }),
 });

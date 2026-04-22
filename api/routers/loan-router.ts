@@ -2,59 +2,58 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createRouter, authedQuery } from "../middleware";
 import { supabase } from "../lib/supabase";
-import { mapLoan, unwrap, unwrapList } from "../lib/data";
+import { mapLoan, mapLoanRepayment, unwrap, unwrapList } from "../lib/data";
 
 export const loanRouter = createRouter({
   list: authedQuery
     .input(
       z.object({
-        groupId: z.number().optional(),
-        status: z.enum(["pending", "approved", "declined", "active", "repaid"]).optional(),
+        groupId: z.string().uuid().optional(),
+        borrowerId: z.string().uuid().optional(),
+        status: z.enum(["pending", "active", "paid", "defaulted", "rejected"]).optional(),
       }).optional(),
     )
     .query(async ({ input }) => {
-      const rows = unwrapList(
-        await supabase.from("loans").select("*").order("created_at", { ascending: false }),
-      );
+      let query = supabase.from("loans").select("*").order("created_at", { ascending: false });
 
-      return rows
-        .map(mapLoan)
-        .filter((row) => {
-          if (input?.groupId && row.groupId !== input.groupId) return false;
-          if (input?.status && row.status !== input.status) return false;
-          return true;
-        });
+      if (input?.groupId) query = query.eq("group_id", input.groupId);
+      if (input?.borrowerId) query = query.eq("borrower_id", input.borrowerId);
+      if (input?.status) query = query.eq("status", input.status);
+
+      const rows = unwrapList(await query);
+      return rows.map(mapLoan);
     }),
 
   getById: authedQuery
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
       const row = unwrap(
         await supabase.from("loans").select("*").eq("id", input.id).maybeSingle(),
         "Loan not found",
       ) as Record<string, unknown>;
-      return mapLoan(row);
+
+      const repayments = unwrapList(
+        await supabase.from("loan_repayments").select("*").eq("loan_id", input.id).order("month_number", { ascending: true })
+      );
+
+      return {
+        ...mapLoan(row),
+        repayments: repayments.map(mapLoanRepayment),
+      };
     }),
 
   request: authedQuery
     .input(
       z.object({
-        groupId: z.number(),
+        groupId: z.string().uuid(),
         amount: z.number().positive(),
+        repaymentMonths: z.number().int().min(1).max(36),
         purpose: z.string().max(500).optional(),
-        repaymentPeriod: z.number().int().min(1).max(24),
-        interestRate: z.number().min(0).max(100).default(5),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const member = unwrap(
-        await supabase
-          .from("group_members")
-          .select("*")
-          .eq("group_id", input.groupId)
-          .eq("user_id", ctx.user.id)
-          .maybeSingle(),
-        "You are not a member of this group",
+      const group = unwrap(
+        await supabase.from("groups").select("loan_interest_rate").eq("id", input.groupId).single(),
       ) as Record<string, unknown>;
 
       const loan = unwrap(
@@ -62,12 +61,12 @@ export const loanRouter = createRouter({
           .from("loans")
           .insert({
             group_id: input.groupId,
-            requester_id: member.id as number,
+            borrower_id: ctx.user.id,
             amount: input.amount,
+            interest_rate: group.loan_interest_rate as number,
+            repayment_months: input.repaymentMonths,
             purpose: input.purpose ?? null,
-            repayment_period: input.repaymentPeriod,
-            interest_rate: input.interestRate,
-            remaining_balance: input.amount,
+            status: "pending",
           })
           .select("*")
           .single(),
@@ -77,126 +76,108 @@ export const loanRouter = createRouter({
     }),
 
   approve: authedQuery
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const loan = unwrap(
         await supabase.from("loans").select("*").eq("id", input.id).single(),
       ) as Record<string, unknown>;
-      const now = new Date();
-      const nextPayment = new Date(now);
-      nextPayment.setMonth(nextPayment.getMonth() + 1);
 
+      if (loan.status !== "pending") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Loan is already approved or rejected" });
+      }
+
+      const now = new Date().toISOString();
       const { error: loanError } = await supabase
         .from("loans")
         .update({
           status: "active",
           approved_by: ctx.user.id,
-          approved_at: now.toISOString(),
-          next_payment_date: nextPayment.toISOString(),
+          disbursed_at: now,
         })
         .eq("id", input.id);
 
-      if (loanError) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: loanError.message,
-        });
-      }
+      if (loanError) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: loanError.message });
 
-      const group = unwrap(
-        await supabase.from("groups").select("*").eq("id", loan.group_id as number).single(),
-      ) as Record<string, unknown>;
-      await supabase
-        .from("groups")
-        .update({ balance: Number(group.balance ?? 0) - Number(loan.amount ?? 0) })
-        .eq("id", loan.group_id as number);
+      // Generate repayment schedule (simplified)
+      const repaymentMonths = loan.repayment_months as number;
+      const principalPerMonth = Number(loan.amount) / repaymentMonths;
+      const interestPerMonth = (Number(loan.amount) * (Number(loan.interest_rate) / 100)) / repaymentMonths;
+      const totalDuePerMonth = principalPerMonth + interestPerMonth;
 
-      await supabase.from("transactions").insert({
-        group_id: loan.group_id as number,
-        type: "loan",
-        amount: Number(loan.amount ?? 0),
-        description: `Loan approved: ${(loan.purpose as string | null) || "No purpose specified"}`,
-        date: now.toISOString(),
-        status: "completed",
-        created_by: ctx.user.id,
+      const schedule = Array.from({ length: repaymentMonths }).map((_, i) => {
+        const dueDate = new Date();
+        dueDate.setMonth(dueDate.getMonth() + i + 1);
+        return {
+          loan_id: loan.id,
+          month_number: i + 1,
+          due_date: dueDate.toISOString().slice(0, 10),
+          principal: principalPerMonth,
+          interest: interestPerMonth,
+          total_due: totalDuePerMonth,
+          status: "pending",
+        };
+      });
+
+      await supabase.from("loan_repayments").insert(schedule);
+
+      await supabase.from("audit_log").insert({
+        group_id: loan.group_id as string,
+        actor_id: ctx.user.id,
+        action: "approved_loan",
+        target_type: "loan",
+        target_id: loan.id as string,
+        details: { amount: loan.amount },
       });
 
       return { success: true };
     }),
 
-  decline: authedQuery
-    .input(z.object({ id: z.number() }))
+  reject: authedQuery
+    .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input }) => {
       const { error } = await supabase
         .from("loans")
-        .update({ status: "declined" })
+        .update({ status: "rejected" })
         .eq("id", input.id);
 
-      if (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error.message,
-        });
-      }
-
+      if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
       return { success: true };
     }),
 
-  makePayment: authedQuery
-    .input(z.object({ id: z.number(), amount: z.number().positive() }))
+  recordRepayment: authedQuery
+    .input(
+      z.object({
+        repaymentId: z.string().uuid(),
+        amount: z.number().positive(),
+        mpesaCode: z.string().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const loan = unwrap(
-        await supabase.from("loans").select("*").eq("id", input.id).single(),
-      ) as Record<string, unknown>;
-      const newBalance = Math.max(0, Number(loan.remaining_balance ?? 0) - input.amount);
-      const status = newBalance <= 0 ? "repaid" : "active";
+      const repayment = unwrap(
+        await supabase.from("loan_repayments").select("*, loans(group_id)").eq("id", input.repaymentId).single(),
+      ) as any;
 
       const { error: updateError } = await supabase
-        .from("loans")
+        .from("loan_repayments")
         .update({
-          remaining_balance: newBalance,
-          status,
+          amount_paid: input.amount,
+          mpesa_code: input.mpesaCode ?? null,
+          status: input.amount >= repayment.total_due ? "paid" : "pending",
+          paid_at: new Date().toISOString(),
         })
-        .eq("id", input.id);
+        .eq("id", input.repaymentId);
 
-      if (updateError) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: updateError.message,
-        });
-      }
+      if (updateError) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: updateError.message });
 
-      await supabase.from("transactions").insert({
-        group_id: loan.group_id as number,
-        type: "repayment",
-        amount: input.amount,
-        description: "Loan repayment",
-        date: new Date().toISOString(),
-        status: "completed",
-        created_by: ctx.user.id,
+      // Audit log
+      await supabase.from("audit_log").insert({
+        group_id: repayment.loans.group_id,
+        actor_id: ctx.user.id,
+        action: "recorded_repayment",
+        target_type: "loan_repayment",
+        target_id: input.repaymentId,
+        details: { amount: input.amount },
       });
-
-      const group = unwrap(
-        await supabase.from("groups").select("*").eq("id", loan.group_id as number).single(),
-      ) as Record<string, unknown>;
-      await supabase
-        .from("groups")
-        .update({ balance: Number(group.balance ?? 0) + input.amount })
-        .eq("id", loan.group_id as number);
-
-      return { success: true, newBalance };
-    }),
-
-  delete: authedQuery
-    .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
-      const { error } = await supabase.from("loans").delete().eq("id", input.id);
-      if (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error.message,
-        });
-      }
 
       return { success: true };
     }),

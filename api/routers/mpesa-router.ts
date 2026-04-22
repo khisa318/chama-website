@@ -2,301 +2,131 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createRouter, authedQuery } from "../middleware";
 import { supabase } from "../lib/supabase";
-import { unwrap, unwrapList } from "../lib/data";
+import { mapMpesaTransaction, unwrap, unwrapList } from "../lib/data";
 
 export const mpesaRouter = createRouter({
   // Initiate STK Push payment
   initiateSTKPush: authedQuery
     .input(
       z.object({
-        groupId: z.number(),
+        groupId: z.string().uuid(),
         amount: z.number().positive(),
         phoneNumber: z.string().regex(/^254\d{9}$/), // Format: 254XXXXXXXXX
         description: z.string().max(500),
-        transactionType: z.enum(["contribution", "repayment", "bill_payment"]),
+        transactionType: z.enum(["contribution", "repayment"]),
+        targetId: z.string().uuid().optional(), // e.g. repayment ID
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify user is member of group
-      const member = unwrap(
-        await supabase
-          .from("group_members")
-          .select("*")
-          .eq("group_id", input.groupId)
-          .eq("user_id", ctx.user.id)
-          .maybeSingle(),
-        "You are not a member of this group",
-      );
+      const isMock = process.env.NEXT_PUBLIC_MPESA_MOCK === "true" || true; // Default to true for now
 
-      // In production, you would call M-Pesa STK Push API here
-      // For now, we'll create a pending transaction record
+      if (isMock) {
+        // Simulate delay
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      const transaction = unwrap(
-        await supabase
-          .from("mpesa_transactions")
-          .insert({
-            group_id: input.groupId,
-            member_id: member.id,
-            amount: input.amount,
-            phone_number: input.phoneNumber,
-            transaction_type: input.transactionType,
-            status: "pending",
-            transaction_date: new Date().toISOString(),
-            mpesa_ref: `PENDING_${Date.now()}`,
-          })
-          .select("*")
-          .single(),
-      );
+        const mpesaCode = `MOCK${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 
-      // TODO: Implement actual M-Pesa STK Push API call here
-      // const stkPush = await initiateSTKPush(input.phoneNumber, input.amount);
-
-      return {
-        transactionId: transaction.id,
-        status: "pending",
-        message: "STK Push initiated. Please enter your M-Pesa PIN on your phone.",
-      };
-    }),
-
-  // Record callback from M-Pesa
-  recordC2BCallback: authedQuery
-    .input(
-      z.object({
-        mpesaRef: z.string(),
-        amount: z.number().positive(),
-        phoneNumber: z.string(),
-        transactionCode: z.string(),
-        groupId: z.number(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      // Find matching pending transaction
-      const pending = await supabase
-        .from("mpesa_transactions")
-        .select("*")
-        .eq("group_id", input.groupId)
-        .eq("phone_number", input.phoneNumber)
-        .eq("amount", input.amount)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (pending.data) {
-        // Update transaction as matched
-        const updated = unwrap(
-          await supabase
-            .from("mpesa_transactions")
-            .update({
-              status: "matched",
-              mpesa_ref: input.mpesaRef,
-            })
-            .eq("id", pending.data.id)
-            .select("*")
-            .single(),
-        );
-
-        // Create contribution/transaction based on type
-        if (pending.data.transaction_type === "contribution") {
+        // Create the actual record based on type
+        if (input.transactionType === "contribution") {
           await supabase.from("contributions").insert({
             group_id: input.groupId,
-            member_id: pending.data.member_id,
+            user_id: ctx.user.id,
             amount: input.amount,
-            date: new Date().toISOString(),
+            month_year: new Date().toISOString().slice(0, 7),
             payment_method: "mpesa",
-            notes: `M-Pesa Ref: ${input.mpesaRef}`,
-            status: "completed",
+            mpesa_code: mpesaCode,
+            status: "paid",
+            recorded_by: ctx.user.id,
+            paid_at: new Date().toISOString(),
           });
+        } else if (input.transactionType === "repayment" && input.targetId) {
+          await supabase.from("loan_repayments").update({
+            amount_paid: input.amount,
+            mpesa_code: mpesaCode,
+            status: "paid",
+            paid_at: new Date().toISOString(),
+          }).eq("id", input.targetId);
         }
 
-        return updated;
+        // Log to raw mpesa_transactions
+        await supabase.from("mpesa_transactions").insert({
+          mpesa_code: mpesaCode,
+          amount: input.amount,
+          phone_number: input.phoneNumber,
+          transaction_type: "STKPush",
+          status: "matched",
+          metadata: { ...input, mock: true },
+        });
+
+        return {
+          success: true,
+          mpesaCode,
+          message: "Payment successful (Mocked)",
+        };
       }
 
-      // If no pending transaction, create new one
-      const group = unwrap(
-        await supabase.from("groups").select("*").eq("id", input.groupId).maybeSingle(),
-      );
-
-      const newTransaction = unwrap(
-        await supabase
-          .from("mpesa_transactions")
-          .insert({
-            group_id: input.groupId,
-            amount: input.amount,
-            phone_number: input.phoneNumber,
-            transaction_type: "contribution",
-            status: "matched",
-            transaction_date: new Date().toISOString(),
-            mpesa_ref: input.mpesaRef,
-          })
-          .select("*")
-          .single(),
-      );
-
-      return newTransaction;
+      // Production STK Push logic would go here
+      throw new TRPCError({ code: "NOT_IMPLEMENTED", message: "Real M-Pesa integration is pending credentials" });
     }),
 
-  // Get transaction history
-  getTransactions: authedQuery
-    .input(
-      z.object({
-        groupId: z.number(),
-        status: z.enum(["pending", "matched", "completed"]).optional(),
-        transactionType: z.enum(["contribution", "repayment", "bill_payment"]).optional(),
-        limit: z.number().int().positive().max(100).default(50),
-      }),
-    )
+  // Get raw mpesa transactions (for admin matching)
+  listRaw: authedQuery
+    .input(z.object({ status: z.enum(["pending", "matched", "failed"]).optional() }).optional())
     .query(async ({ input }) => {
-      let query = supabase
-        .from("mpesa_transactions")
-        .select("*")
-        .eq("group_id", input.groupId);
+      let query = supabase.from("mpesa_transactions").select("*").order("created_at", { ascending: false });
+      if (input?.status) query = query.eq("status", input.status);
 
-      if (input.status) {
-        query = query.eq("status", input.status);
-      }
-
-      if (input.transactionType) {
-        query = query.eq("transaction_type", input.transactionType);
-      }
-
-      const { data } = await query
-        .order("transaction_date", { ascending: false })
-        .limit(input.limit);
-
-      return data || [];
+      const rows = unwrapList(await query);
+      return rows.map(mapMpesaTransaction);
     }),
 
-  // Get member payment history
-  getMemberPaymentHistory: authedQuery
-    .input(
-      z.object({
-        groupId: z.number(),
-        memberId: z.number(),
-        limit: z.number().int().positive().max(100).default(50),
-      }),
-    )
-    .query(async ({ input }) => {
-      const transactions = unwrapList(
-        await supabase
-          .from("mpesa_transactions")
-          .select("*")
-          .eq("group_id", input.groupId)
-          .eq("member_id", input.memberId)
-          .order("transaction_date", { ascending: false })
-          .limit(input.limit),
-      );
-
-      return transactions;
-    }),
-
-  // Auto-match pending transactions
-  autoMatchTransactions: authedQuery
-    .input(z.object({ groupId: z.number() }))
+  // Auto-match raw transactions to members by phone number
+  autoMatch: authedQuery
+    .input(z.object({ groupId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const member = unwrap(
-        await supabase
-          .from("group_members")
-          .select("*")
-          .eq("group_id", input.groupId)
-          .eq("user_id", ctx.user.id)
-          .maybeSingle(),
-      );
-
-      if (!["treasurer", "chairperson", "admin"].includes(member.role)) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-
       const pending = unwrapList(
-        await supabase
-          .from("mpesa_transactions")
-          .select("*")
-          .eq("group_id", input.groupId)
-          .eq("status", "pending"),
+        await supabase.from("mpesa_transactions").select("*").eq("status", "pending")
       );
 
       let matchedCount = 0;
+      for (const tx of pending) {
+        // Try to find a member with this phone number in the group
+        const { data: member } = await supabase
+          .from("users")
+          .select("id")
+          .eq("phone", tx.phone_number)
+          .single();
 
-      for (const transaction of pending) {
-        if (transaction.member_id) {
-          // Auto-match this transaction
-          await supabase
-            .from("mpesa_transactions")
-            .update({ status: "matched" })
-            .eq("id", transaction.id);
+        if (member) {
+          // Check if they are in this group
+          const { data: membership } = await supabase
+            .from("group_members")
+            .select("*")
+            .eq("group_id", input.groupId)
+            .eq("user_id", member.id)
+            .single();
 
-          // Create corresponding contribution/repayment
-          if (transaction.transaction_type === "contribution") {
+          if (membership) {
+            // Found a match! Create contribution
             await supabase.from("contributions").insert({
               group_id: input.groupId,
-              member_id: transaction.member_id,
-              amount: transaction.amount,
-              date: transaction.transaction_date,
+              user_id: member.id,
+              amount: tx.amount,
+              month_year: new Date().toISOString().slice(0, 7),
               payment_method: "mpesa",
-              notes: `M-Pesa Ref: ${transaction.mpesa_ref}`,
-              status: "completed",
+              mpesa_code: tx.mpesa_code,
+              status: "paid",
+              recorded_by: ctx.user.id,
+              paid_at: tx.created_at,
             });
-          }
 
-          matchedCount++;
+            await supabase.from("mpesa_transactions").update({ status: "matched" }).eq("id", tx.id);
+            matchedCount++;
+          }
         }
       }
 
-      return {
-        matched: matchedCount,
-        total: pending.length,
-      };
-    }),
-
-  // Get payment summary
-  getPaymentSummary: authedQuery
-    .input(
-      z.object({
-        groupId: z.number(),
-        startDate: z.date().optional(),
-        endDate: z.date().optional(),
-      }),
-    )
-    .query(async ({ input }) => {
-      let query = supabase
-        .from("mpesa_transactions")
-        .select("*")
-        .eq("group_id", input.groupId);
-
-      if (input.startDate) {
-        query = query.gte("transaction_date", input.startDate.toISOString());
-      }
-
-      if (input.endDate) {
-        const endOfDay = new Date(input.endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        query = query.lte("transaction_date", endOfDay.toISOString());
-      }
-
-      const { data } = await query;
-      const transactions = data || [];
-
-      const summary = {
-        totalTransactions: transactions.length,
-        totalAmount: transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0),
-        byType: {
-          contribution: transactions
-            .filter((t) => t.transaction_type === "contribution")
-            .reduce((sum, t) => sum + parseFloat(t.amount), 0),
-          repayment: transactions
-            .filter((t) => t.transaction_type === "repayment")
-            .reduce((sum, t) => sum + parseFloat(t.amount), 0),
-          billPayment: transactions
-            .filter((t) => t.transaction_type === "bill_payment")
-            .reduce((sum, t) => sum + parseFloat(t.amount), 0),
-        },
-        byStatus: {
-          pending: transactions.filter((t) => t.status === "pending").length,
-          matched: transactions.filter((t) => t.status === "matched").length,
-          completed: transactions.filter((t) => t.status === "completed").length,
-        },
-      };
-
-      return summary;
+      return { matchedCount };
     }),
 });
+

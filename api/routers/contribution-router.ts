@@ -4,42 +4,30 @@ import { createRouter, authedQuery } from "../middleware";
 import { supabase } from "../lib/supabase";
 import { mapContribution, unwrap, unwrapList } from "../lib/data";
 
-function inDateRange(value: string, from?: Date, to?: Date) {
-  const date = new Date(value);
-  if (from && date < from) return false;
-  if (to && date > to) return false;
-  return true;
-}
-
 export const contributionRouter = createRouter({
   list: authedQuery
     .input(
       z.object({
-        groupId: z.number().optional(),
-        status: z.enum(["completed", "pending", "failed"]).optional(),
-        dateFrom: z.date().optional(),
-        dateTo: z.date().optional(),
+        groupId: z.string().uuid().optional(),
+        userId: z.string().uuid().optional(),
+        status: z.enum(["paid", "pending", "overdue"]).optional(),
+        monthYear: z.string().optional(), // "YYYY-MM"
       }).optional(),
     )
     .query(async ({ input }) => {
-      const rows = unwrapList(
-        await supabase
-          .from("contributions")
-          .select("*")
-          .order("created_at", { ascending: false }),
-      );
+      let query = supabase.from("contributions").select("*").order("created_at", { ascending: false });
 
-      return rows
-        .map(mapContribution)
-        .filter((row) => {
-          if (input?.groupId && row.groupId !== input.groupId) return false;
-          if (input?.status && row.status !== input.status) return false;
-          return inDateRange(row.date, input?.dateFrom, input?.dateTo);
-        });
+      if (input?.groupId) query = query.eq("group_id", input.groupId);
+      if (input?.userId) query = query.eq("user_id", input.userId);
+      if (input?.status) query = query.eq("status", input.status);
+      if (input?.monthYear) query = query.eq("month_year", input.monthYear);
+
+      const rows = unwrapList(await query);
+      return rows.map(mapContribution);
     }),
 
   getById: authedQuery
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
       const row = unwrap(
         await supabase.from("contributions").select("*").eq("id", input.id).maybeSingle(),
@@ -48,17 +36,16 @@ export const contributionRouter = createRouter({
       return mapContribution(row);
     }),
 
-  create: authedQuery
+  record: authedQuery
     .input(
       z.object({
-        groupId: z.number(),
-        memberId: z.number(),
+        groupId: z.string().uuid(),
+        userId: z.string().uuid(),
         amount: z.number().positive(),
-        date: z.date(),
-        paymentMethod: z
-          .enum(["cash", "bank_transfer", "mobile_money", "card"])
-          .default("cash"),
-        notes: z.string().max(1000).optional(),
+        monthYear: z.string().regex(/^\d{4}-\d{2}$/), // "YYYY-MM"
+        paymentMethod: z.enum(["mpesa", "cash", "bank"]),
+        mpesaCode: z.string().optional(),
+        status: z.enum(["paid", "pending"]).default("paid"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -67,59 +54,46 @@ export const contributionRouter = createRouter({
           .from("contributions")
           .insert({
             group_id: input.groupId,
-            member_id: input.memberId,
+            user_id: input.userId,
             amount: input.amount,
-            date: input.date.toISOString(),
+            month_year: input.monthYear,
             payment_method: input.paymentMethod,
-            notes: input.notes ?? null,
+            mpesa_code: input.mpesaCode ?? null,
+            status: input.status,
+            recorded_by: ctx.user.id,
+            paid_at: input.status === "paid" ? new Date().toISOString() : null,
           })
           .select("*")
           .single(),
       ) as Record<string, unknown>;
 
-      const group = unwrap(
-        await supabase.from("groups").select("*").eq("id", input.groupId).single(),
-      ) as Record<string, unknown>;
-      const member = unwrap(
-        await supabase.from("group_members").select("*").eq("id", input.memberId).single(),
-      ) as Record<string, unknown>;
-
-      await supabase
-        .from("groups")
-        .update({ balance: Number(group.balance ?? 0) + input.amount })
-        .eq("id", input.groupId);
-
-      await supabase
-        .from("group_members")
-        .update({
-          total_contributed: Number(member.total_contributed ?? 0) + input.amount,
-          contribution_status: "paid",
-        })
-        .eq("id", input.memberId);
-
-      await supabase.from("transactions").insert({
+      // Audit log entry
+      await supabase.from("audit_log").insert({
         group_id: input.groupId,
-        type: "contribution",
-        amount: input.amount,
-        description: `Contribution via ${input.paymentMethod}`,
-        date: input.date.toISOString(),
-        status: "completed",
-        created_by: ctx.user.id,
+        actor_id: ctx.user.id,
+        action: "recorded_contribution",
+        target_type: "contribution",
+        target_id: contribution.id as string,
+        details: { amount: input.amount, monthYear: input.monthYear },
       });
 
       return mapContribution(contribution);
     }),
 
-  update: authedQuery
+  updateStatus: authedQuery
     .input(
       z.object({
-        id: z.number(),
-        status: z.enum(["completed", "pending", "failed"]).optional(),
+        id: z.string().uuid(),
+        status: z.enum(["paid", "pending", "overdue"]),
+        mpesaCode: z.string().optional(),
       }),
     )
-    .mutation(async ({ input }) => {
-      const updates: Record<string, unknown> = {};
-      if (input.status) updates.status = input.status;
+    .mutation(async ({ input, ctx }) => {
+      const updates: Record<string, unknown> = {
+        status: input.status,
+        paid_at: input.status === "paid" ? new Date().toISOString() : null,
+      };
+      if (input.mpesaCode) updates.mpesa_code = input.mpesaCode;
 
       const { error } = await supabase.from("contributions").update(updates).eq("id", input.id);
       if (error) {
@@ -133,7 +107,7 @@ export const contributionRouter = createRouter({
     }),
 
   delete: authedQuery
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input }) => {
       const { error } = await supabase.from("contributions").delete().eq("id", input.id);
       if (error) {
@@ -142,38 +116,28 @@ export const contributionRouter = createRouter({
           message: error.message,
         });
       }
-
       return { success: true };
     }),
 
-  monthlySummary: authedQuery
-    .input(
-      z.object({
-        groupId: z.number().optional(),
-        month: z.number().optional(),
-        year: z.number().optional(),
-      }).optional(),
-    )
+  getSummary: authedQuery
+    .input(z.object({ groupId: z.string().uuid(), monthYear: z.string().optional() }))
     .query(async ({ input }) => {
-      const rows = unwrapList(await supabase.from("contributions").select("*"));
-      const now = new Date();
-      const month = input?.month ?? now.getMonth() + 1;
-      const year = input?.year ?? now.getFullYear();
+      const monthYear = input.monthYear ?? new Date().toISOString().slice(0, 7);
+      
+      const { data: contributions } = await supabase
+        .from("contributions")
+        .select("amount, status")
+        .eq("group_id", input.groupId)
+        .eq("month_year", monthYear);
 
-      const filtered = rows
-        .map(mapContribution)
-        .filter((row) => {
-          const date = new Date(row.date);
-          if (date.getMonth() + 1 !== month || date.getFullYear() !== year) return false;
-          if (input?.groupId && row.groupId !== input.groupId) return false;
-          return true;
-        });
+      const totalPaid = contributions?.filter(c => c.status === "paid").reduce((sum, c) => sum + Number(c.amount), 0) || 0;
+      const totalPending = contributions?.filter(c => c.status === "pending").reduce((sum, c) => sum + Number(c.amount), 0) || 0;
 
       return {
-        total: filtered.reduce((sum, row) => sum + row.amount, 0),
-        count: filtered.length,
-        month,
-        year,
+        monthYear,
+        totalPaid,
+        totalPending,
+        count: contributions?.length || 0,
       };
     }),
 });

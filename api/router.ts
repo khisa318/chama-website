@@ -20,10 +20,12 @@ import { billRouter } from "./routers/bill-router";
 import { permissionRouter } from "./routers/permission-router";
 import { preferenceRouter } from "./routers/preference-router";
 import { mpesaRouter } from "./routers/mpesa-router";
+import { userRouter } from "./routers/user-router";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now() })),
   auth: authRouter,
+  user: userRouter,
   group: groupRouter,
   contribution: contributionRouter,
   transaction: transactionRouter,
@@ -47,3 +49,4 @@ export const appRouter = createRouter({
 });
 
 export type AppRouter = typeof appRouter;
+
