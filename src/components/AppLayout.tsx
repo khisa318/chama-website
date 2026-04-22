@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useChamaState } from "@/hooks/useChamaState";
+import { useRealtimeNotifications } from "@/hooks/useRealtime";
 import {
   LayoutDashboard,
   LogOut,
@@ -14,8 +15,10 @@ import {
   HandCoins,
   CreditCard,
   MessageCircle,
-  FileText
+  FileText,
+  Bell
 } from "lucide-react";
+import { toast } from "sonner";
 import type { ReactNode } from "react";
 
 const navItems = [
@@ -34,10 +37,22 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   useEffect(() => {
     // Force light mode
     document.documentElement.classList.remove('dark');
   }, []);
+
+  // Real-time notifications
+  useRealtimeNotifications(user?.id, (notification) => {
+    // Show toast for new notification
+    toast(notification.title || 'New notification', {
+      description: notification.message,
+      duration: 5000,
+    });
+    setUnreadCount((prev) => prev + 1);
+  });
 
   const currentPage =
     navItems.find(item => location.pathname.startsWith(item.path))?.label ??
@@ -148,6 +163,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
             <div className="flex items-center gap-3">
               {/* Dark mode removed per user request */}
+              {/* Notification Bell */}
+              <Link
+                to="/app/notifications"
+                className="relative w-11 h-11 rounded-[16px] bg-secondary text-foreground flex items-center justify-center transition-colors hover:bg-secondary/80"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Link>
             </div>
           </div>
         </header>
